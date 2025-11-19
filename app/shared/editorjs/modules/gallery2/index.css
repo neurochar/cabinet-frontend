@@ -1,0 +1,218 @@
+.image-gallery {
+    --bg-color: #cdd1e0;
+    --front-color: #388ae5;
+    --border-color: #e8e8eb;
+}
+
+.image-gallery__container {
+    background: black;
+    margin-bottom: 10px;
+    padding: 5px;
+}
+
+.image-gallery__controls {
+    display: flex;
+    gap: 10px;
+    padding: 8px 2px 3px;
+}
+
+.image-gallery__items {
+    display: grid;
+    gap: 10px;
+    grid-template-columns: 1fr 1fr 1fr;
+    padding: 10px;
+    background-color: #222222;
+}
+
+.image-gallery__items:empty {
+    display: none;
+}
+
+.image-gallery__preloaders {
+    display: flex;
+    flex-grow: 1;
+    flex-wrap: nowrap;
+    padding: 5px;
+    gap: 8px;
+    overflow: hidden;
+}
+
+.image-gallery__preloader {
+    min-width: 30px;
+    height: 30px;
+    border-radius: 50%;
+    background-size: cover;
+    position: relative;
+    background-color: var(--bg-color);
+    background-position: center center;
+}
+
+.image-gallery__preloader::after {
+    content: '';
+    position: absolute;
+    z-index: 3;
+    width: 30px;
+    height: 30px;
+    border-radius: 50%;
+    border: 2px solid var(--bg-color);
+    border-top-color: var(--front-color);
+    left: 50%;
+    top: 50%;
+    margin-top: -15px;
+    margin-left: -15px;
+    animation: image-preloader-spin 2s infinite linear;
+    box-sizing: border-box;
+}
+
+.sortable .image-gallery__image {
+    cursor: move;
+}
+
+.image-gallery__image {
+    position: relative;
+    overflow: hidden;
+    user-select: none;
+    background-color: black;
+    border-radius: 3px;
+    padding: 5px;
+}
+
+.image-gallery__image.sortable-ghost {
+    opacity: 0.75;
+}
+
+.image-gallery__image--empty,
+.image-gallery__image--loading {
+    display: none;
+}
+
+.image-gallery__image-picture {
+    border-radius: 3px;
+    max-width: 100%;
+    width: 100%;
+    display: block;
+    margin: auto;
+    object-fit: cover;
+    object-position: center;
+    aspect-ratio: 16 / 9;
+    pointer-events: none;
+}
+
+.image-gallery__image-trash {
+    position: absolute;
+    top: 3px;
+    right: 3px;
+    cursor: pointer;
+    color: #fff;
+    font-size: 18px;
+    background-color: rgba(0, 0, 0, 0.25);
+    line-height: 1;
+    padding: 6px 8px;
+    border-radius: 3px;
+    transition: background-color 0.1s;
+}
+
+.image-gallery__image-trash:hover {
+    background-color: rgba(0, 0, 0, 0.5);
+}
+
+.image-gallery__counter {
+    display: flex;
+    align-items: center;
+    color: gray;
+    font-size: 14px;
+    margin-right: 6px;
+}
+
+.image-gallery__caption[contentEditable='true'][data-placeholder]::before {
+    position: absolute !important;
+    content: attr(data-placeholder);
+    color: #707684;
+    font-weight: normal;
+    display: none;
+}
+
+.image-gallery__caption[contentEditable='true'][data-placeholder]:empty::before {
+    display: block;
+}
+
+.image-gallery__caption[contentEditable='true'][data-placeholder]:empty:focus::before {
+    display: none;
+}
+
+.image-gallery__caption {
+    margin-bottom: 10px;
+}
+
+.image-gallery .cdx-button {
+    height: 40px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 12px;
+    gap: 5px;
+    white-space: nowrap;
+}
+
+/* Tunes */
+.image-gallery__tune-wrapper {
+    display: flex;
+    gap: 6px;
+    margin: 6px 0;
+}
+
+.image-gallery__tune-wrapper:first-child {
+    margin-top: 0;
+}
+
+.image-gallery__tune-wrapper:last-child {
+    margin-bottom: 0;
+}
+
+.image-gallery__tune {
+    flex-grow: 1;
+    padding: 6px;
+    color: var(--color-text-primary);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.image-gallery__tune.active {
+    background: var(--color-background-icon-active);
+    color: var(--color-text-icon-active);
+    border-color: var(--color-text-icon-active);
+}
+
+.image-gallery__tune svg {
+    width: 24px;
+    height: 24px;
+}
+
+@keyframes image-preloader-spin {
+    0% {
+        transform: rotate(0deg);
+    }
+    100% {
+        transform: rotate(360deg);
+    }
+}
+
+.image-gallery__image-caption {
+    background: #d3d3d3b2;
+    outline: 0;
+    margin: 5px auto 0 auto;
+    font-size: 16px;
+    padding: 5px;
+    border: none;
+    width: 95%;
+    border-radius: 3px;
+    color: black;
+    display: block;
+}
+
+.image-gallery__image-caption[contentEditable='true'][placeholder]:empty::before {
+    content: attr(placeholder);
+    color: #707684;
+    display: block;
+}
