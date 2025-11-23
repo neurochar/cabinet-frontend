@@ -29,7 +29,7 @@ export default defineEventHandler(async (event) => {
         const response = await $fetch<BackendResponseDTO>('/v1/auth/login', {
             baseURL: config.public.apiBase,
             method: 'POST',
-            headers: GetDefaultHeaders(),
+            headers: GetDefaultHeaders(event),
             body: {
                 email: request.email,
                 password: request.password,

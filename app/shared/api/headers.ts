@@ -1,15 +1,19 @@
-export function GetDefaultHeaders() {
+import type { EventHandlerRequest, H3Event } from 'h3';
+
+export function GetDefaultHeaders(event: H3Event<EventHandlerRequest> | undefined) {
     const headers = new Headers({
         'X-Check': 'true',
     });
 
     try {
-        const event = useRequestEvent();
         if (event) {
-            const cfIP = getRequestHeader(event, 'cf-connecting-ip');
-            const xff = getRequestHeader(event, 'x-forwarded-for');
-            const socketIP = event?.node.req.socket.remoteAddress || '';
-            const clientIP = cfIP?.trim() || xff?.split(',')[0]?.trim() || socketIP;
+            const req = event.node.req;
+
+            const xRealIP = getRequestHeader(event, 'x-real-ip')?.trim() || '';
+            const xffHeader = getRequestHeader(event, 'x-forwarded-for') || '';
+            const socketIP = req.socket.remoteAddress || '';
+
+            const clientIP = xRealIP || xffHeader || socketIP || '';
 
             headers.set('X-Real-IP', clientIP || '');
             headers.set('X-Forwarded-For', clientIP || '');
@@ -34,7 +38,7 @@ export function GetDefaultHeaders() {
             headers.set('X-Referer', safeURL);
         }
     } catch (e) {
-        console.log(e);
+        console.error(e);
     }
 
     return headers;

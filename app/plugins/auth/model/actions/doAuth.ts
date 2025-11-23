@@ -1,3 +1,4 @@
+import { GetDefaultHeaders } from '~/shared/api/headers';
 import { tryToCatchApiErrors } from '~/shared/errors/errors';
 import { AUTH_ACCESS_TOKEN_KEY } from '../const/const';
 import type { IAuthUserData } from '../types/auth.types';
@@ -12,6 +13,7 @@ export const doAuth = async (): Promise<void> => {
     try {
         const result = await useNuxtApp().$apiFetch<IAuthUserData>('v1/auth/whoiam', {
             method: 'GET',
+            headers: GetDefaultHeaders(undefined),
         });
 
         setAuthUserData(result);

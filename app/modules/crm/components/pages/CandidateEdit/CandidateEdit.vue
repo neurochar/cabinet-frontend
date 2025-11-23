@@ -1,54 +1,50 @@
 <script setup lang="ts">
-    /*
-    import type { CalculatorWidgetEquipmentForm } from '#components';
+    import type { CrmWidgetCandidateForm } from '#components';
     import { showErrors, showSuccess } from '~/core/components/shared/inform/toast';
-    import { CalculatorModule } from '~/modules/calculator/const';
-    import { setModuleBreadcrums } from '~/modules/calculator/domain/actions/setModuleBreadcrums';
-    import { loadConnectionTypesList } from '~/modules/calculator/domain/api/connection_type/fetchConnectionTypesList';
-    import { fetchEquipment } from '~/modules/calculator/domain/api/equipment/fetchEquipment';
-    import { updateEquipment } from '~/modules/calculator/domain/api/equipment/updateEquipment';
-    import { checkEquipmentState } from '~/modules/calculator/domain/hooks/checkEquipmentState';
-    import type { IEquipmentItem, IEquipmentItemState } from '~/modules/calculator/domain/model/types/equipment';
+    import { module } from '~/modules/crm/const';
+    import { setModuleBreadcrums } from '~/modules/crm/domain/actions/setModuleBreadcrums';
+    import { fetchCandidate } from '~/modules/crm/domain/api/candidate/fetchCandidate';
+    import { updateCandidate } from '~/modules/crm/domain/api/candidate/updateCandidate';
+    import { checkCandidateState } from '~/modules/crm/domain/hooks/checkCandidateState';
+    import type { ICandidateItem, ICandidateItemState } from '~/modules/crm/domain/model/types/candidate';
     import { setMenu } from '~/plugins/app/model/actions/setMenu';
     import { ApiError } from '~/shared/errors/errors';
 
     const props = defineProps<{
-        id: number;
+        id: string;
     }>();
 
     useSeoMeta({
         title: 'Редактирование объекта',
     });
 
-    setMenu(CalculatorModule.urlName, 'equipment');
+    setMenu(module.urlName, 'candidates');
 
     setModuleBreadcrums([
         {
             name: 'Оборудование',
-            to: `/equipment`,
+            to: `/candidates`,
         },
         {
             name: 'Редактирование объекта',
         },
     ]);
 
-    const form = ref<InstanceType<typeof CalculatorWidgetEquipmentForm> | null>(null);
+    const form = ref<InstanceType<typeof CrmWidgetCandidateForm> | null>(null);
 
-    const itemState = ref<IEquipmentItemState | null>(null);
-    const itemObject = ref<IEquipmentItem | null>(null);
+    const itemState = ref<ICandidateItemState | null>(null);
+    const itemObject = ref<ICandidateItem | null>(null);
 
     const isLoading = ref(false);
 
     const errors = ref<string[]>([]);
 
-    const { data: connectionTypesList } = loadConnectionTypesList();
+    const isLoadingAnything = computed(() => isLoading.value);
 
-    const isLoadingAnything = computed(() => isLoading.value || !connectionTypesList.value);
-
-    const fetchItem = async (): Promise<IEquipmentItem | null> => {
+    const fetchItem = async (): Promise<ICandidateItem | null> => {
         isLoading.value = true;
         try {
-            const data = await fetchEquipment(props.id);
+            const data = await fetchCandidate(props.id);
             return data;
         } catch (e) {
             if (e instanceof ApiError) {
@@ -68,31 +64,13 @@
         return null;
     };
 
-    const updateItemState = (item: IEquipmentItem) => {
+    const updateItemState = (item: ICandidateItem) => {
         itemObject.value = item;
 
-        const stateValue: IEquipmentItemState = {
-            type: item.type,
-            isPublished: item.isPublished,
-            title: item.title,
-            description: item.description,
-            imageFileID: item.imageFile ? item.imageFile.id : null,
-            price: item.price,
-            monthPrice: item.monthPrice,
-            installPrice: item.installPrice,
-            connectionTypeLinks: [],
+        const stateValue: ICandidateItemState = {
+            candidateName: item.candidateName,
+            candidateSurname: item.candidateSurname,
         };
-
-        if (item.connectionTypeLinks) {
-            stateValue.connectionTypeLinks = item.connectionTypeLinks.map((link) => {
-                return {
-                    connectionTypeID: link.connectionType.id,
-                    price: link.price,
-                    monthPrice: link.monthPrice,
-                    installPrice: link.installPrice,
-                };
-            });
-        }
 
         itemState.value = stateValue;
     };
@@ -120,13 +98,13 @@
             await form.value.syncAllData();
         }
 
-        errors.value = checkEquipmentState(itemState.value);
+        errors.value = checkCandidateState(itemState.value);
 
         if (errors.value.length) return;
 
         isLoading.value = true;
         try {
-            await updateEquipment(itemObject.value.id, {
+            await updateCandidate(itemObject.value.id, {
                 ...itemState.value,
                 _version: itemObject.value._version,
             });
@@ -148,12 +126,10 @@
             isLoading.value = false;
         }
     };
-    */
 </script>
 
 <template>
     <div>
-        <!--
         <div>
             <div class="form-table">
                 <div>
@@ -166,7 +142,7 @@
         </div>
 
         <div class="form_title mt-10">
-            <div class="title">Объект</div>
+            <div class="title">Карточка кандидата</div>
             <div class="buttons">
                 <UButton
                     :disabled="isLoadingAnything"
@@ -196,17 +172,15 @@
             </UAlert>
         </div>
         <div class="mt-4">
-            <CalculatorWidgetEquipmentForm
-                v-if="itemState && itemObject && connectionTypesList"
+            <CrmWidgetCandidateForm
+                v-if="itemState && itemObject"
                 ref="form"
                 v-model="itemState"
                 v-model:data-item="itemObject"
-                :connection-types-list="connectionTypesList.items"
                 mode="edit"
                 :disabled="isLoadingAnything"
             />
         </div>
-        -->
     </div>
 </template>
 

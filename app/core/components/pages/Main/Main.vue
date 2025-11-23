@@ -15,7 +15,7 @@
 <template>
     <div>
         <div :id="$style.title"><MonitorCog class="inline-block mr-3 stroke-neutral-500" />{{ $authData.userData?.tenant.name }}</div>
-        <div :id="$style.desc">Добро пожаловать в панель управления!</div>
+        <div :id="$style.desc">Добро пожаловать в рабочее пространство!</div>
     </div>
 </template>
 

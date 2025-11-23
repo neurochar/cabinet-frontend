@@ -1,3 +1,4 @@
+import { GetDefaultHeaders } from '~/shared/api/headers';
 import { ApiError } from '~/shared/errors/errors';
 import { SingleFlight } from '~/shared/helpers/singleflight';
 import { doLogout } from './auth/model';
@@ -15,9 +16,7 @@ export default defineNuxtPlugin({
             retry: 1,
             retryStatusCodes: [401],
             retryDelay: 0,
-            headers: {
-                'X-Check': 'true',
-            },
+            headers: GetDefaultHeaders(undefined),
 
             async onRequest({ options }) {
                 if ((options as any)._meta === undefined) {

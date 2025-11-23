@@ -1,4 +1,6 @@
-import { doAuth } from './model/actions/doAuth';
+import { doAuth } from './model';
+import { checkTenantIsExists } from './model/actions/checkTenantIsExists';
+import { getCurrentTenantTextID } from './model/hooks/getCurrentTenantTextID';
 import type { IAuthData } from './model/types/auth.types';
 
 export default defineNuxtPlugin({
@@ -13,7 +15,9 @@ export default defineNuxtPlugin({
             }),
         );
 
-        if (import.meta.client) {
+        const tenantTextID = getCurrentTenantTextID();
+
+        auth: if (import.meta.client && tenantTextID) {
             authData.value.isLoading = true;
 
             let loaderDiv;
@@ -25,12 +29,23 @@ export default defineNuxtPlugin({
             }
 
             try {
+                const isExists = await checkTenantIsExists(tenantTextID);
+                if (!isExists) {
+                    navigateTo(useNuxtApp().$config.public.mainUrl, { external: true });
+                }
+            } catch (e: unknown) {
+                console.error(e);
+                alert('Ошибка при загрузке tenantID...');
+                break auth;
+            }
+
+            try {
                 await doAuth();
             } catch (e: unknown) {
                 //
-            } finally {
-                authData.value.isLoading = false;
             }
+
+            authData.value.isLoading = false;
 
             if (loaderDiv) {
                 loaderDiv.remove();

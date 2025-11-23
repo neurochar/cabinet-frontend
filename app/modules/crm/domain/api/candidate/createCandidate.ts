@@ -1,7 +1,7 @@
 import { tryToCatchApiErrors } from '~/shared/errors/errors';
-import type { IEquipmentItem, IEquipmentItemState } from '../../model/types/equipment';
+import type { ICandidateItem, ICandidateItemState } from '../../model/types/candidate';
 
-type Input = IEquipmentItemState;
+type Input = ICandidateItemState;
 
 type Payload = Input;
 
@@ -9,9 +9,9 @@ const mapDataToRequest = (data: Input): Payload => {
     return data;
 };
 
-export async function createEquipment(input: Input) {
+export async function createCandidate(input: Input) {
     try {
-        return await useNuxtApp().$apiFetch<IEquipmentItem>(`calculator/equipment`, {
+        return await useNuxtApp().$apiFetch<ICandidateItem>(`v1/crm/candidates`, {
             method: 'POST',
             body: mapDataToRequest(input),
         });

@@ -21,7 +21,7 @@ export default defineEventHandler(async (event) => {
     }
 
     try {
-        const headers = GetDefaultHeaders();
+        const headers = GetDefaultHeaders(event);
         headers.set('Authorization', authHeader);
 
         const response = await $fetch<BackendResponseDTO>('/v1/auth/logout', {

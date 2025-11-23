@@ -19,17 +19,17 @@ export default defineEventHandler(async (event) => {
         await $fetch('/v1/auth/verify-email', {
             baseURL: config.public.apiBase,
             method: 'POST',
-            headers: GetDefaultHeaders(),
+            headers: GetDefaultHeaders(event),
             params: {
                 code: code,
                 code_id: codeID,
             },
         });
 
-        const url = '/';
+        const url = '/?account-verified=true';
 
-        event.node.res.setHeader('Content-Type', 'text/html; charset=utf-8');
-        return `<div style="font-size:20px">Аккаунт подтвержден, вы можете <a href="${url}">авторизоваться</a>.</div>`;
+        sendRedirect(event, url, 302);
+        return;
     } catch (e: unknown) {
         if (e instanceof FetchError && e.statusCode) {
             setResponseStatus(event, e.statusCode);

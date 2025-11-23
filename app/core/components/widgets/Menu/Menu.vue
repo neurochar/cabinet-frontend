@@ -1,5 +1,6 @@
 <script setup lang="ts">
     import type { NavigationMenuItem } from '@nuxt/ui';
+    import { RoleByID } from '~/core/domain/model/const/roles';
     import { getMenu as crmGetMenu } from '~/modules/crm/sysHooks/getMenu';
     import { getMenu as testingGetMenu } from '~/modules/testing/sysHooks/getMenu';
     import type { IAppData } from '~/plugins/app/model/types/types';
@@ -8,6 +9,8 @@
     const appData = useState<IAppData>('app');
 
     const items = computed<NavigationMenuItem[][]>(() => {
+        const userRole = RoleByID(useNuxtApp().$authData.userData!.account.roleID);
+
         const menu: NavigationMenuItem[][] = [
             [
                 {
@@ -15,11 +18,18 @@
                     type: 'label',
                 },
                 {
-                    label: 'Рабочая область',
+                    label: 'Пространство',
                     icon: 'i-lucide-monitor-cog',
                     active: 'workspace' === appData.value.menuSel,
                     defaultOpen: true,
                     children: [
+                        userRole && userRole.rank == 1
+                            ? {
+                                  label: 'Настройки',
+                                  to: '/settings',
+                                  active: 'settings' === appData.value.subMenuSel,
+                              }
+                            : undefined,
                         {
                             label: 'Личный кабинет',
                             to: '/cabinet',
@@ -30,7 +40,7 @@
                             to: '/users',
                             active: 'users' === appData.value.subMenuSel,
                         },
-                    ],
+                    ].filter((i) => i) as NavigationMenuItem[],
                 },
             ],
         ];

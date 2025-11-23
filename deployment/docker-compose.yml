@@ -1,6 +1,6 @@
 services:
     frontend-app:
-        image: letit-frontend-admin:v1
+        image: neurochar-frontend-cabinet:v1
         restart: unless-stopped
         ports:
             - 127.0.0.1:3020:3000
@@ -10,4 +10,6 @@ services:
                 max-size: "50m"
                 max-file: "5" 
         environment:
-            NUXT_PUBLIC_API_BASE: /cpanel-api/v1
+            NUXT_PUBLIC_TENANT: ""
+            NUXT_PUBLIC_API_BASE: https://api.neurochar.ru
+            NUXT_PUBLIC_MAIN_URL: https://neurochar.ru

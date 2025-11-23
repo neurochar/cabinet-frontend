@@ -13,6 +13,7 @@ export default defineNuxtConfig({
     },
 
     devServer: {
+        host: '0.0.0.0',
         port: Number(process.env.NUXT_PORT) || 3000,
     },
 
@@ -107,6 +108,7 @@ export default defineNuxtConfig({
             isProd: process.env.NODE_ENV === 'production',
             tenant: 'demo',
             apiBase: 'http://localhost:8080',
+            mainUrl: 'http://localhost:3010',
             maxFilesize: 10485760,
         },
     },

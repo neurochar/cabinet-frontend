@@ -222,7 +222,7 @@
             background: url('@/assets/images/logo_black.svg') no-repeat center top;
             background-size: 100% auto;
             max-width: 360px;
-            padding-top: 11.6%;
+            padding-top: 12%;
             margin: 0 auto 30px auto;
         }
 
