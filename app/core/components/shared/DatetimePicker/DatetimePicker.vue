@@ -10,6 +10,7 @@
 
     const props = defineProps<{
         modelValue: Model;
+        time?: boolean;
         seconds?: boolean;
         label?: string;
         disabled?: boolean;
@@ -34,6 +35,8 @@
         const h = String(d.getHours()).padStart(2, '0');
         const m = String(d.getMinutes()).padStart(2, '0');
         const s = String(d.getSeconds()).padStart(2, '0');
+        if (!props.time) return `${Y}-${M}-${D}`;
+
         return props.seconds ? `${Y}-${M}-${D}T${h}:${m}:${s}` : `${Y}-${M}-${D}T${h}:${m}`;
     }
 
@@ -58,7 +61,7 @@
 <template>
     <UInput
         v-model="inputValue"
-        type="datetime-local"
+        :type="time ? 'datetime-local' : 'date'"
         :placeholder="placeholder"
         :disabled="disabled"
         :step="seconds ? 1 : undefined"

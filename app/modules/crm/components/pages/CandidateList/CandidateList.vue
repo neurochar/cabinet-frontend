@@ -6,9 +6,10 @@
     import { setModuleBreadcrums } from '~/modules/crm/domain/actions/setModuleBreadcrums';
     import { deleteCandidate } from '~/modules/crm/domain/api/candidate/deleteCandidate';
     import { fetchCandidateList } from '~/modules/crm/domain/api/candidate/fetchCandidateList';
-    import type { ICandidateListItem } from '~/modules/crm/domain/model/types/candidate';
+    import { ICandidateItemGender, ICandidateItemGenderConfig, type ICandidateListItem } from '~/modules/crm/domain/model/types/candidate';
     import { setMenu } from '~/plugins/app/model/actions/setMenu';
     import { ApiError } from '~/shared/errors/errors';
+    import { calcAge, declOfNum, parseDate } from '~/shared/helpers/functions';
 
     useSeoMeta({
         title: 'База кандидатов',
@@ -134,7 +135,19 @@
             <template #id-cell="{ row }">
                 <div style="font-size: 10px">{{ row.original.id }}</div>
             </template>
-            <template #name-cell="{ row }"> {{ row.original.candidateName }} {{ row.original.candidateSurname }} </template>
+            <template #name-cell="{ row }">
+                <div style="font-weight: bold">{{ row.original.candidateName }} {{ row.original.candidateSurname }}</div>
+                <template v-if="row.original.candidateGender != ICandidateItemGender.unknown">
+                    <div style="font-size: 11px">Пол: {{ ICandidateItemGenderConfig[row.original.candidateGender].label }}</div>
+                </template>
+                <template v-if="row.original.candidateBirthday != null">
+                    <div style="font-size: 11px">
+                        Дата рождения: {{ parseDate(row.original.candidateBirthday).toLocaleDateString() }},
+                        {{ calcAge(parseDate(row.original.candidateBirthday)) }}
+                        {{ declOfNum(calcAge(parseDate(row.original.candidateBirthday)), ['год', 'года', 'лет']) }}
+                    </div>
+                </template>
+            </template>
             <template #action-cell="{ row }">
                 <div class="flex justify-end">
                     <UDropdownMenu :items="getDropdownActions(row.original)">

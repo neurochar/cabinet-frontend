@@ -5,7 +5,7 @@
     import { setModuleBreadcrums } from '~/modules/crm/domain/actions/setModuleBreadcrums';
     import { createCandidate } from '~/modules/crm/domain/api/candidate/createCandidate';
     import { checkCandidateState } from '~/modules/crm/domain/hooks/checkCandidateState';
-    import type { ICandidateItemState } from '~/modules/crm/domain/model/types/candidate';
+    import { ICandidateItemGender, type ICandidateItemState } from '~/modules/crm/domain/model/types/candidate';
     import { setMenu } from '~/plugins/app/model/actions/setMenu';
     import { ApiError } from '~/shared/errors/errors';
 
@@ -30,6 +30,8 @@
     const initState: ICandidateItemState = {
         candidateName: '',
         candidateSurname: '',
+        candidateGender: ICandidateItemGender.unknown,
+        candidateBirthday: null,
     };
 
     const itemObject = ref<null>(null);

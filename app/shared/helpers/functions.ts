@@ -121,3 +121,45 @@ export function declOfNum(n: number, titles: [string, string, string]): string {
 
     return titles[idx];
 }
+
+export function parseDate(dateStr: string): Date {
+    if (typeof dateStr !== 'string') {
+        throw new Error(`parseDate: expected string, got ${typeof dateStr}`);
+    }
+
+    const trimmed = dateStr.trim();
+    if (trimmed.length === 0) {
+        throw new Error('parseDate: empty string is not a valid date');
+    }
+
+    const direct = new Date(trimmed);
+    if (!isNaN(direct.getTime())) {
+        return direct;
+    }
+
+    const ymdMatch = trimmed.match(/^(\d{4})-(\d{2})-(\d{2})$/);
+    if (ymdMatch) {
+        const [_, y, m, d] = ymdMatch;
+        return new Date(Date.UTC(Number(y), Number(m) - 1, Number(d), 0, 0, 0, 0));
+    }
+
+    throw new Error(`parseDate: unsupported date format "${dateStr}"`);
+}
+
+export function calcAge(birthDate: Date, compareDate: Date = new Date()): number {
+    const birthYear = birthDate.getUTCFullYear();
+    const birthMonth = birthDate.getUTCMonth();
+    const birthDay = birthDate.getUTCDate();
+
+    const currentYear = compareDate.getUTCFullYear();
+    const currentMonth = compareDate.getUTCMonth();
+    const currentDay = compareDate.getUTCDate();
+
+    let age = currentYear - birthYear;
+
+    if (currentMonth < birthMonth || (currentMonth === birthMonth && currentDay < birthDay)) {
+        age--;
+    }
+
+    return age;
+}

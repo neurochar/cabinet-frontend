@@ -70,6 +70,8 @@
         const stateValue: ICandidateItemState = {
             candidateName: item.candidateName,
             candidateSurname: item.candidateSurname,
+            candidateGender: item.candidateGender,
+            candidateBirthday: item.candidateBirthday,
         };
 
         itemState.value = stateValue;

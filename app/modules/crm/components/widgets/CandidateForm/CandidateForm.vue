@@ -1,5 +1,5 @@
 <script setup lang="ts">
-    import type { ICandidateItem, ICandidateItemState } from '~/modules/crm/domain/model/types/candidate';
+    import { ICandidateItemGenderConfig, type ICandidateItem, type ICandidateItemState } from '~/modules/crm/domain/model/types/candidate';
 
     const props = defineProps<{
         disabled?: boolean;
@@ -25,6 +25,13 @@
     defineExpose({
         syncAllData,
         rebuild,
+    });
+
+    const gendersListOptions = computed(() => {
+        return Object.entries(ICandidateItemGenderConfig).map(([key, value]) => ({
+            value: Number(key),
+            label: value.label,
+        }));
     });
 </script>
 
@@ -52,6 +59,33 @@
                     size="xl"
                     class="w-full"
                     :disabled="disabled"
+                />
+            </div>
+        </div>
+        <div>
+            <div class="title">
+                Пол:
+                <div class="desc">Указывать необязательно, но знание поможет нашим алгоритмам точнее работать карточкой кандидата</div>
+            </div>
+            <div class="value">
+                <USelect
+                    v-model="dataModel.candidateGender"
+                    size="xl"
+                    :items="gendersListOptions"
+                    class="w-full"
+                    :disabled="disabled"
+                />
+            </div>
+        </div>
+        <div>
+            <div class="title">
+                Дата рождения:
+                <div class="desc">Указывать необязательно, но знание поможет нашим алгоритмам точнее работать карточкой кандидата</div>
+            </div>
+            <div class="value">
+                <SharedDatetimePicker
+                    v-model="dataModel.candidateBirthday"
+                    size="xl"
                 />
             </div>
         </div>
