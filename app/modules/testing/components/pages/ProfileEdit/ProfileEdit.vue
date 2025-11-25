@@ -1,54 +1,53 @@
 <script setup lang="ts">
-    /*
-    import type { CalculatorWidgetEquipmentForm } from '#components';
+    import type { TestingWidgetProfileForm } from '#components';
     import { showErrors, showSuccess } from '~/core/components/shared/inform/toast';
-    import { CalculatorModule } from '~/modules/calculator/const';
-    import { setModuleBreadcrums } from '~/modules/calculator/domain/actions/setModuleBreadcrums';
-    import { loadConnectionTypesList } from '~/modules/calculator/domain/api/connection_type/fetchConnectionTypesList';
-    import { fetchEquipment } from '~/modules/calculator/domain/api/equipment/fetchEquipment';
-    import { updateEquipment } from '~/modules/calculator/domain/api/equipment/updateEquipment';
-    import { checkEquipmentState } from '~/modules/calculator/domain/hooks/checkEquipmentState';
-    import type { IEquipmentItem, IEquipmentItemState } from '~/modules/calculator/domain/model/types/equipment';
+    import { module } from '~/modules/testing/const';
+    import { setModuleBreadcrums } from '~/modules/testing/domain/actions/setModuleBreadcrums';
+    import { loadPersonalityTraitsList } from '~/modules/testing/domain/api/personality_trait/fetchPersonalityTraitsList';
+    import { fetchProfile } from '~/modules/testing/domain/api/profile/fetchProfile';
+    import { updateProfile } from '~/modules/testing/domain/api/profile/updateProfile';
+    import { checkProfileState } from '~/modules/testing/domain/hooks/checkProfileState';
+    import type { IProfileItem, IProfileItemState } from '~/modules/testing/domain/model/types/profile';
     import { setMenu } from '~/plugins/app/model/actions/setMenu';
     import { ApiError } from '~/shared/errors/errors';
 
     const props = defineProps<{
-        id: number;
+        id: string;
     }>();
 
     useSeoMeta({
         title: 'Редактирование объекта',
     });
 
-    setMenu(CalculatorModule.urlName, 'equipment');
+    setMenu(module.urlName, 'profiles');
 
     setModuleBreadcrums([
         {
-            name: 'Оборудование',
-            to: `/equipment`,
+            name: 'Список профилей',
+            to: `/profiles`,
         },
         {
             name: 'Редактирование объекта',
         },
     ]);
 
-    const form = ref<InstanceType<typeof CalculatorWidgetEquipmentForm> | null>(null);
+    const form = ref<InstanceType<typeof TestingWidgetProfileForm> | null>(null);
 
-    const itemState = ref<IEquipmentItemState | null>(null);
-    const itemObject = ref<IEquipmentItem | null>(null);
+    const itemState = ref<IProfileItemState | null>(null);
+    const itemObject = ref<IProfileItem | null>(null);
 
     const isLoading = ref(false);
 
     const errors = ref<string[]>([]);
 
-    const { data: connectionTypesList } = loadConnectionTypesList();
+    const { data: personalityTraitsList } = loadPersonalityTraitsList();
 
-    const isLoadingAnything = computed(() => isLoading.value || !connectionTypesList.value);
+    const isLoadingAnything = computed(() => isLoading.value || !personalityTraitsList.value);
 
-    const fetchItem = async (): Promise<IEquipmentItem | null> => {
+    const fetchItem = async (): Promise<IProfileItem | null> => {
         isLoading.value = true;
         try {
-            const data = await fetchEquipment(props.id);
+            const data = await fetchProfile(props.id);
             return data;
         } catch (e) {
             if (e instanceof ApiError) {
@@ -68,31 +67,13 @@
         return null;
     };
 
-    const updateItemState = (item: IEquipmentItem) => {
+    const updateItemState = (item: IProfileItem) => {
         itemObject.value = item;
 
-        const stateValue: IEquipmentItemState = {
-            type: item.type,
-            isPublished: item.isPublished,
-            title: item.title,
-            description: item.description,
-            imageFileID: item.imageFile ? item.imageFile.id : null,
-            price: item.price,
-            monthPrice: item.monthPrice,
-            installPrice: item.installPrice,
-            connectionTypeLinks: [],
+        const stateValue: IProfileItemState = {
+            name: item.name,
+            personalityTraitsMap: item.personalityTraitsMap,
         };
-
-        if (item.connectionTypeLinks) {
-            stateValue.connectionTypeLinks = item.connectionTypeLinks.map((link) => {
-                return {
-                    connectionTypeID: link.connectionType.id,
-                    price: link.price,
-                    monthPrice: link.monthPrice,
-                    installPrice: link.installPrice,
-                };
-            });
-        }
 
         itemState.value = stateValue;
     };
@@ -120,13 +101,13 @@
             await form.value.syncAllData();
         }
 
-        errors.value = checkEquipmentState(itemState.value);
+        errors.value = checkProfileState(itemState.value);
 
         if (errors.value.length) return;
 
         isLoading.value = true;
         try {
-            await updateEquipment(itemObject.value.id, {
+            await updateProfile(itemObject.value.id, {
                 ...itemState.value,
                 _version: itemObject.value._version,
             });
@@ -148,12 +129,10 @@
             isLoading.value = false;
         }
     };
-    */
 </script>
 
 <template>
     <div>
-        <!--
         <div>
             <div class="form-table">
                 <div>
@@ -166,7 +145,7 @@
         </div>
 
         <div class="form_title mt-10">
-            <div class="title">Объект</div>
+            <div class="title">Профиль</div>
             <div class="buttons">
                 <UButton
                     :disabled="isLoadingAnything"
@@ -196,17 +175,16 @@
             </UAlert>
         </div>
         <div class="mt-4">
-            <CalculatorWidgetEquipmentForm
-                v-if="itemState && itemObject && connectionTypesList"
+            <TestingWidgetProfileForm
+                v-if="itemState && itemObject && personalityTraitsList"
                 ref="form"
                 v-model="itemState"
                 v-model:data-item="itemObject"
-                :connection-types-list="connectionTypesList.items"
+                :personality-traits-list="personalityTraitsList.items"
                 mode="edit"
                 :disabled="isLoadingAnything"
             />
         </div>
-        -->
     </div>
 </template>
 

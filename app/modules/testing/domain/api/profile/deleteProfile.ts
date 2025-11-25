@@ -1,8 +1,8 @@
 import { tryToCatchApiErrors } from '~/shared/errors/errors';
 
-export async function deleteEquipment(id: number) {
+export async function deleteProfile(id: string) {
     try {
-        return await useNuxtApp().$apiFetch<Response>(`calculator/equipment/${id}`, {
+        return await useNuxtApp().$apiFetch<Response>(`v1/testing/profiles/${id}`, {
             method: 'DELETE',
         });
     } catch (e: unknown) {

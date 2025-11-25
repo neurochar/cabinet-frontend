@@ -1,12 +1,14 @@
 <script setup lang="ts">
-    // import { CalculatorModule } from '~/modules/calculator/const';
-    // import { setModuleBreadcrums } from '~/modules/calculator/domain/actions/setModuleBreadcrums';
-    // import { deleteEquipment } from '~/modules/calculator/domain/api/equipment/deleteEquipment';
-    // import { fetchEquipmentList } from '~/modules/calculator/domain/api/equipment/fetchEquipmentList';
-    // import { IEquipmentItemTypeConfig, type IEquipmentListItem } from '~/modules/calculator/domain/model/types/equipment';
+    import type { DropdownMenuItem, TableColumn } from '@nuxt/ui';
+    import Confirm from '~/core/components/shared/Confirm/modals/Confirm.vue';
+    import { showErrors, showSuccess } from '~/core/components/shared/inform/toast';
     import { module } from '~/modules/testing/const';
     import { setModuleBreadcrums } from '~/modules/testing/domain/actions/setModuleBreadcrums';
+    import { deleteProfile } from '~/modules/testing/domain/api/profile/deleteProfile';
+    import { fetchProfileList } from '~/modules/testing/domain/api/profile/fetchProfileList';
+    import type { IProfileListItem } from '~/modules/testing/domain/model/types/profile';
     import { setMenu } from '~/plugins/app/model/actions/setMenu';
+    import { ApiError } from '~/shared/errors/errors';
 
     useSeoMeta({
         title: 'Список профилей',
@@ -20,37 +22,19 @@
         },
     ]);
 
-    /*
-
     const isLoading = ref(true);
 
-    const list = ref<IEquipmentListItem[]>([]);
-
-    const typeFilter = ref(0);
-
-    const typesListOptions = computed(() => {
-        return [
-            {
-                value: 0,
-                label: 'Все типы...',
-                class: 'text-graylight-600',
-            },
-            ...Object.entries(IEquipmentItemTypeConfig).map(([key, value]) => ({
-                value: Number(key),
-                label: value.label,
-            })),
-        ];
-    });
+    const list = ref<IProfileListItem[]>([]);
 
     const listPrepared = computed(() => {
-        return list.value.filter((item) => typeFilter.value === 0 || item.type === typeFilter.value);
+        return list.value;
     });
 
     const fetchData = async () => {
         isLoading.value = true;
 
         try {
-            const data = await fetchEquipmentList();
+            const data = await fetchProfileList();
             if (data.items) {
                 list.value = data.items;
             }
@@ -63,7 +47,7 @@
         }
     };
 
-    const removeItem = async (id: number): Promise<boolean> => {
+    const removeItem = async (id: string): Promise<boolean> => {
         const modal = useOverlay().create(Confirm, {
             props: {
                 text: 'Вы действительно хотите удалить объект?',
@@ -76,7 +60,7 @@
         const shouldDelete = await instance.result;
         if (shouldDelete) {
             try {
-                await deleteEquipment(id);
+                await deleteProfile(id);
 
                 showSuccess('Объект удален');
 
@@ -91,14 +75,10 @@
         return false;
     };
 
-    const columns: TableColumn<IEquipmentListItem>[] = [
+    const columns: TableColumn<IProfileListItem>[] = [
         {
             id: 'id',
             header: 'ID',
-        },
-        {
-            id: 'image',
-            header: 'Изображение',
         },
         {
             id: 'name',
@@ -109,13 +89,13 @@
         },
     ];
 
-    function getDropdownActions(item: IEquipmentListItem): DropdownMenuItem[][] {
+    function getDropdownActions(item: IProfileListItem): DropdownMenuItem[][] {
         return [
             [
                 {
                     label: 'Редактировать',
                     icon: 'i-lucide-edit',
-                    to: `/${CalculatorModule.urlName}/equipment/${item.id}`,
+                    to: `/${module.urlName}/profiles/${item.id}`,
                 },
                 {
                     label: 'Удалить',
@@ -137,23 +117,12 @@
     onMounted(() => {
         fetchData();
     });
-    */
 </script>
 
 <template>
     <div>
-        <!--
         <div class="flex justify-end">
-            <UButton :to="`/${CalculatorModule.urlName}/equipment/new`">Создать новый объект</UButton>
-        </div>
-        <div class="mt-4 flex gap-4 items-center flex-wrap">
-            <div>
-                <USelect
-                    v-model="typeFilter"
-                    :items="typesListOptions"
-                    class="w-48"
-                />
-            </div>
+            <UButton :to="`/${module.urlName}/profiles/new`">Создать новый объект</UButton>
         </div>
         <UTable
             v-model:column-pinning="columnPinning"
@@ -165,27 +134,8 @@
             <template #id-cell="{ row }">
                 {{ row.original.id }}
             </template>
-            <template #image-cell="{ row }">
-                <template v-if="row.original.imageFile">
-                    <img
-                        :src="row.original.imageFile.url"
-                        alt=""
-                        style="max-width: 50px"
-                    />
-                </template>
-                <template v-else>-</template>
-            </template>
             <template #name-cell="{ row }">
-                <div>{{ IEquipmentItemTypeConfig[row.original.type].label }}</div>
-                <b>{{ row.original.title }}</b>
-                <div>
-                    <template v-if="row.original.isPublished">
-                        <span class="text-green-500">опубликовано</span>
-                    </template>
-                    <template v-else>
-                        <span class="text-red-500">не опубликовано</span>
-                    </template>
-                </div>
+                <b>{{ row.original.name }}</b>
             </template>
             <template #action-cell="{ row }">
                 <div class="flex justify-end">
@@ -200,7 +150,6 @@
                 </div>
             </template>
         </UTable>
-        -->
     </div>
 </template>
 
