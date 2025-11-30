@@ -8,7 +8,7 @@ interface IRoomStatusConfigItem {
 }
 
 export const IRoomStatusConfig: Record<IRoomStatus, IRoomStatusConfigItem> = {
-    [IRoomStatus.not_started]: { label: 'Тестирование не начато' },
+    [IRoomStatus.not_started]: { label: 'Тестирование не завершено' },
     [IRoomStatus.finished]: { label: 'Тестирование завершено' },
 };
 

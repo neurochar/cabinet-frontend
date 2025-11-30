@@ -6,7 +6,7 @@
     import { setModuleBreadcrums } from '~/modules/testing/domain/actions/setModuleBreadcrums';
     import { deleteRoom } from '~/modules/testing/domain/api/room/deleteRoom';
     import { fetchRoomList } from '~/modules/testing/domain/api/room/fetchRoomList';
-    import type { IRoomListItem } from '~/modules/testing/domain/model/types/room';
+    import { IRoomStatus, statusToConfig, type IRoomListItem } from '~/modules/testing/domain/model/types/room';
     import { setMenu } from '~/plugins/app/model/actions/setMenu';
     import { ApiError } from '~/shared/errors/errors';
 
@@ -132,7 +132,10 @@
             :ui="{ td: '__whitespace-normal' }"
         >
             <template #id-cell="{ row }">
-                {{ row.original.id }}
+                <div style="font-size: 10px">{{ row.original.id }}</div>
+                <div :style="{ color: row.original.status === IRoomStatus.not_started ? 'red' : 'green' }">
+                    {{ statusToConfig(row.original.status)?.label }}
+                </div>
             </template>
             <template #info-cell="{ row }">
                 <template v-if="row.original.candidate">
