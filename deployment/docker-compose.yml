@@ -13,3 +13,4 @@ services:
             NUXT_PUBLIC_TENANT: ""
             NUXT_PUBLIC_API_BASE: https://api.neurochar.ru
             NUXT_PUBLIC_MAIN_URL: https://neurochar.ru
+            NUXT_PUBLIC_ROOM_URL: https://room.neurochar.ru

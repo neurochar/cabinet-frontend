@@ -1,13 +1,11 @@
 <script setup lang="ts">
-    /*
-    import type { CalculatorWidgetEquipmentForm } from '#components';
+    import type { TestingWidgetRoomForm } from '#components';
     import { showSuccess } from '~/core/components/shared/inform/toast';
-    import { CalculatorModule } from '~/modules/calculator/const';
-    import { setModuleBreadcrums } from '~/modules/calculator/domain/actions/setModuleBreadcrums';
-    import { loadConnectionTypesList } from '~/modules/calculator/domain/api/connection_type/fetchConnectionTypesList';
-    import { createEquipment } from '~/modules/calculator/domain/api/equipment/createEquipment';
-    import { checkEquipmentState } from '~/modules/calculator/domain/hooks/checkEquipmentState';
-    import { IEquipmentItemType, type IEquipmentItemState } from '~/modules/calculator/domain/model/types/equipment';
+    import { module } from '~/modules/testing/const';
+    import { setModuleBreadcrums } from '~/modules/testing/domain/actions/setModuleBreadcrums';
+    import { createRoom } from '~/modules/testing/domain/api/room/createRoom';
+    import { checkRoomState } from '~/modules/testing/domain/hooks/checkRoomState';
+    import type { IRoomItemState } from '~/modules/testing/domain/model/types/room';
     import { setMenu } from '~/plugins/app/model/actions/setMenu';
     import { ApiError } from '~/shared/errors/errors';
 
@@ -15,43 +13,34 @@
         title: 'Создание объекта',
     });
 
-    setMenu(CalculatorModule.urlName, 'equipment');
+    setMenu(module.urlName, 'rooms');
 
     setModuleBreadcrums([
         {
-            name: 'Оборудование',
-            to: `/equipment`,
+            name: 'Список комнат тестирования',
+            to: `/rooms`,
         },
         {
             name: 'Создание объекта',
         },
     ]);
 
-    const form = ref<InstanceType<typeof CalculatorWidgetEquipmentForm> | null>(null);
+    const form = ref<InstanceType<typeof TestingWidgetRoomForm> | null>(null);
 
-    const initState: IEquipmentItemState = {
-        type: IEquipmentItemType.internet_pon,
-        isPublished: true,
-        title: '',
-        description: {},
-        imageFileID: null,
-        price: 0,
-        monthPrice: 0,
-        installPrice: 0,
-        connectionTypeLinks: [],
+    const initState: IRoomItemState = {
+        candidateID: null,
+        profileID: null,
     };
 
     const itemObject = ref<null>(null);
 
-    const itemState = ref<IEquipmentItemState>(initState);
+    const itemState = ref<IRoomItemState>(initState);
 
     const isLoading = ref(false);
 
     const errors = ref<string[]>([]);
 
-    const { data: connectionTypesList } = loadConnectionTypesList();
-
-    const isLoadingAnything = computed(() => isLoading.value || !connectionTypesList.value);
+    const isLoadingAnything = computed(() => isLoading.value);
 
     const save = async () => {
         if (isLoadingAnything.value || !itemState.value) return;
@@ -60,17 +49,17 @@
             await form.value.syncAllData();
         }
 
-        errors.value = checkEquipmentState(itemState.value);
+        errors.value = checkRoomState(itemState.value);
 
         if (errors.value.length) return;
 
         isLoading.value = true;
         try {
-            const data = await createEquipment(itemState.value);
+            const data = await createRoom(itemState.value);
 
             showSuccess();
 
-            await navigateTo(`/${CalculatorModule.urlName}/equipment/${data.id}`);
+            await navigateTo(`/${module.urlName}/rooms/${data.id}`);
         } catch (e) {
             if (e instanceof ApiError) {
                 errors.value = e.formHints();
@@ -79,14 +68,12 @@
             isLoading.value = false;
         }
     };
-    */
 </script>
 
 <template>
     <div>
-        <!--
         <div class="form_title">
-            <div class="title">Объект</div>
+            <div class="title">Комната</div>
             <div class="buttons">
                 <UButton
                     :disabled="isLoadingAnything"
@@ -116,17 +103,15 @@
             </UAlert>
         </div>
         <div class="mt-4">
-            <CalculatorWidgetEquipmentForm
-                v-if="itemState && connectionTypesList"
+            <TestingWidgetRoomForm
+                v-if="itemState"
                 ref="form"
                 v-model="itemState"
                 v-model:data-item="itemObject"
-                :connection-types-list="connectionTypesList.items"
                 mode="new"
                 :disabled="isLoadingAnything"
             />
         </div>
-        -->
     </div>
 </template>
 

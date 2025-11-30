@@ -109,6 +109,7 @@ export default defineNuxtConfig({
             tenant: 'demo',
             apiBase: 'http://localhost:8080',
             mainUrl: 'http://localhost:3010',
+            roomUrl: 'http://localhost:3011',
             maxFilesize: 10485760,
         },
     },
