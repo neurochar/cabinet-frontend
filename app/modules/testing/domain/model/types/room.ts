@@ -38,9 +38,20 @@ export interface IRoomItem {
             target: number;
         }
     >;
+    result: {
+        totalMatch: number;
+        totalMatchTip: string;
+        traits: Record<
+            string,
+            {
+                match: number;
+                tip: string;
+            }
+        >;
+    } | null;
 }
 
-export type IRoomListItem = Omit<IRoomItem, 'personalityTraitsMap'>;
+export type IRoomListItem = Omit<Omit<IRoomItem, 'personalityTraitsMap'>, 'result'>;
 
 export interface IRoomItemState {
     candidateID: string | null;
