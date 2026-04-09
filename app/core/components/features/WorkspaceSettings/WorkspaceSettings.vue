@@ -12,7 +12,7 @@
 
     const userRole = RoleByID(useNuxtApp().$authData.userData?.account.roleId || '0');
 
-    const readonly = computed(() => (userRole?.rank || Infinity) > 1 || true);
+    const readonly = computed(() => (userRole?.rank || Infinity) > 1);
 
     const formState = ref({ ...useNuxtApp().$authData.userData!.tenant });
 
