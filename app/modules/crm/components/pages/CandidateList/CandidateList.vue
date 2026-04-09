@@ -1,15 +1,14 @@
 <script setup lang="ts">
     import type { DropdownMenuItem, TableColumn } from '@nuxt/ui';
+    import { V1Gender, type V1Candidate } from '~/api/generated/Api';
     import Confirm from '~/core/components/shared/Confirm/modals/Confirm.vue';
     import { showErrors, showSuccess } from '~/core/components/shared/inform/toast';
     import { module } from '~/modules/crm/const';
     import { setModuleBreadcrums } from '~/modules/crm/domain/actions/setModuleBreadcrums';
-    import { deleteCandidate } from '~/modules/crm/domain/api/candidate/deleteCandidate';
-    import { fetchCandidateList } from '~/modules/crm/domain/api/candidate/fetchCandidateList';
-    import { ICandidateItemGender, ICandidateItemGenderConfig, type ICandidateListItem } from '~/modules/crm/domain/model/types/candidate';
+    import { ICandidateItemGenderConfig } from '~/modules/crm/domain/model/types/candidate';
     import { setMenu } from '~/plugins/app/model/actions/setMenu';
     import { ApiError } from '~/shared/errors/errors';
-    import { calcAge, declOfNum, parseDate } from '~/shared/helpers/functions';
+    import { calcAge, declOfNum, parsePbDate } from '~/shared/helpers/functions';
 
     useSeoMeta({
         title: 'База кандидатов',
@@ -23,9 +22,31 @@
         },
     ]);
 
+    const api = useApi();
+
+    const route = useRoute();
+
+    let routePage = Number(route.query.page);
+    if (!routePage || isNaN(routePage)) {
+        routePage = 1;
+    }
+
+    const page = ref(routePage);
+
     const isLoading = ref(true);
 
-    const list = ref<ICandidateListItem[]>([]);
+    const list = ref<V1Candidate[]>([]);
+
+    const defaultLimit = 20;
+
+    let routeLimit = Number(route.query.limit);
+    if (!routeLimit || isNaN(routeLimit)) {
+        routeLimit = defaultLimit;
+    }
+
+    const limit = ref(routeLimit);
+
+    const total = ref(0);
 
     const listPrepared = computed(() => {
         return list.value;
@@ -35,9 +56,29 @@
         isLoading.value = true;
 
         try {
-            const data = await fetchCandidateList();
-            if (data.items) {
-                list.value = data.items;
+            const res = await api.v1.crmPublicServiceListCandidates({
+                limit: String(limit.value < 1 ? 1 : limit.value),
+                offset: String((page.value - 1) * limit.value),
+            });
+
+            if (res.error !== null) {
+                throw res.error;
+            }
+
+            if (res.data && res.data.items) {
+                list.value = res.data.items;
+                total.value = res.data.total;
+
+                await navigateTo(
+                    {
+                        query: {
+                            ...route.query,
+                            page: page.value > 1 ? page.value : undefined,
+                            limit: limit.value !== defaultLimit ? limit.value.toString() : undefined,
+                        },
+                    },
+                    { replace: true },
+                );
             }
         } catch (e: unknown) {
             if (e instanceof ApiError) {
@@ -47,6 +88,19 @@
             isLoading.value = false;
         }
     };
+
+    const onPageUpdate = (p: number) => {
+        if (isLoading.value) return;
+        page.value = p;
+        fetchData();
+    };
+
+    watch(limit, () => {
+        page.value = 1;
+        setTimeout(() => {
+            fetchData();
+        }, 100);
+    });
 
     const removeItem = async (id: string): Promise<boolean> => {
         const modal = useOverlay().create(Confirm, {
@@ -61,14 +115,21 @@
         const shouldDelete = await instance.result;
         if (shouldDelete) {
             try {
-                await deleteCandidate(id);
+                const res = await api.v1.crmPublicServiceDeleteCandidate(id);
+                if (res.error !== null) {
+                    throw res.error;
+                }
 
                 showSuccess('Объект удален');
 
                 return true;
             } catch (e) {
                 if (e instanceof ApiError) {
-                    showErrors(e.formHints());
+                    if (e.textCode === 'ROOMS_WITH_CANDIDATE_EXISTS') {
+                        showErrors(['Кандидат имеет связанные комнаты, удаление запрещено']);
+                    } else {
+                        showErrors(e.formHints());
+                    }
                 }
             }
         }
@@ -76,21 +137,21 @@
         return false;
     };
 
-    const columns: TableColumn<ICandidateListItem>[] = [
+    const columns: TableColumn<V1Candidate>[] = [
         {
             id: 'id',
             header: 'ID',
         },
         {
-            id: 'name',
-            header: 'Имя',
+            id: 'candidate',
+            header: 'Кандидат',
         },
         {
             id: 'action',
         },
     ];
 
-    function getDropdownActions(item: ICandidateListItem): DropdownMenuItem[][] {
+    function getDropdownActions(item: V1Candidate): DropdownMenuItem[][] {
         return [
             [
                 {
@@ -133,18 +194,20 @@
             :ui="{ td: '__whitespace-normal' }"
         >
             <template #id-cell="{ row }">
-                <div style="font-size: 10px">{{ row.original.id }}</div>
+                <div style="font-size: 10px; text-decoration: underline">
+                    <NuxtLink :to="`/${module.urlName}/candidates/${row.original.id}`">{{ row.original.id }}</NuxtLink>
+                </div>
             </template>
-            <template #name-cell="{ row }">
-                <div style="font-weight: bold">{{ row.original.candidateName }} {{ row.original.candidateSurname }}</div>
-                <template v-if="row.original.candidateGender != ICandidateItemGender.unknown">
-                    <div style="font-size: 11px">Пол: {{ ICandidateItemGenderConfig[row.original.candidateGender].label }}</div>
+            <template #candidate-cell="{ row }">
+                <div style="font-weight: bold">{{ row.original.name }} {{ row.original.surname }}</div>
+                <template v-if="row.original.gender != V1Gender.GENDER_UNSPECIFIED">
+                    <div style="font-size: 11px">Пол: {{ ICandidateItemGenderConfig[row.original.gender].label }}</div>
                 </template>
-                <template v-if="row.original.candidateBirthday != null">
+                <template v-if="row.original.birthday">
                     <div style="font-size: 11px">
-                        Дата рождения: {{ parseDate(row.original.candidateBirthday).toLocaleDateString() }},
-                        {{ calcAge(parseDate(row.original.candidateBirthday)) }}
-                        {{ declOfNum(calcAge(parseDate(row.original.candidateBirthday)), ['год', 'года', 'лет']) }}
+                        Дата рождения: {{ parsePbDate(row.original.birthday).toLocaleDateString() }},
+                        {{ calcAge(parsePbDate(row.original.birthday)) }}
+                        {{ declOfNum(calcAge(parsePbDate(row.original.birthday)), ['год', 'года', 'лет']) }}
                     </div>
                 </template>
             </template>
@@ -161,6 +224,17 @@
                 </div>
             </template>
         </UTable>
+        <SharedPaginator
+            v-model="limit"
+            :disabled="isLoading"
+        >
+            <UPagination
+                :page="page"
+                :items-per-page="Number(limit)"
+                :total="Number(total)"
+                @update:page="onPageUpdate"
+            />
+        </SharedPaginator>
     </div>
 </template>
 

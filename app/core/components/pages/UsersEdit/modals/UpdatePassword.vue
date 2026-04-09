@@ -1,12 +1,13 @@
 <script setup lang="ts">
-    import { patchAccount } from '~/core/domain/api/patchAccount';
-    import type { IUserAccount } from '~/core/domain/model/types/users';
+    import type { V1AccountTenant } from '~/api/generated/Api';
     import { ApiError } from '~/shared/errors/errors';
 
     const emit = defineEmits<{ close: [boolean] }>();
 
+    const api = useApi();
+
     const props = defineProps<{
-        account: IUserAccount;
+        account: V1AccountTenant;
     }>();
 
     const showPassword = ref(false);
@@ -32,10 +33,17 @@
 
         isLoading.value = true;
         try {
-            await patchAccount(props.account.id, {
-                _version: props.account._version,
-                password: formState.value.password,
+            const res = await api.v1.usersTenantPublicServicePatchAccount(props.account.id, {
+                payload: {
+                    password: formState.value.password,
+                },
+                skipVersionCheck: true,
+                version: '0',
             });
+
+            if (res.error !== null) {
+                throw res.error;
+            }
 
             emit('close', true);
         } catch (e) {

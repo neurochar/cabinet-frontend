@@ -1,11 +1,11 @@
 <script setup lang="ts">
     import type { CrmWidgetCandidateForm } from '#components';
+    import { V1Gender } from '~/api/generated/Api';
     import { showSuccess } from '~/core/components/shared/inform/toast';
     import { module } from '~/modules/crm/const';
     import { setModuleBreadcrums } from '~/modules/crm/domain/actions/setModuleBreadcrums';
-    import { createCandidate } from '~/modules/crm/domain/api/candidate/createCandidate';
     import { checkCandidateState } from '~/modules/crm/domain/hooks/checkCandidateState';
-    import { ICandidateItemGender, type ICandidateItemState } from '~/modules/crm/domain/model/types/candidate';
+    import type { CandidateFromState } from '~/modules/crm/domain/model/types/candidate';
     import { setMenu } from '~/plugins/app/model/actions/setMenu';
     import { ApiError } from '~/shared/errors/errors';
 
@@ -25,18 +25,17 @@
         },
     ]);
 
-    const form = ref<InstanceType<typeof CrmWidgetCandidateForm> | null>(null);
+    const api = useApi();
 
-    const initState: ICandidateItemState = {
-        candidateName: '',
-        candidateSurname: '',
-        candidateGender: ICandidateItemGender.unknown,
-        candidateBirthday: null,
-    };
+    const form = ref<InstanceType<typeof CrmWidgetCandidateForm> | null>(null);
 
     const itemObject = ref<null>(null);
 
-    const itemState = ref<ICandidateItemState>(initState);
+    const itemState = ref<CandidateFromState>({
+        gender: V1Gender.GENDER_UNSPECIFIED,
+        name: '',
+        surname: '',
+    });
 
     const isLoading = ref(false);
 
@@ -57,11 +56,25 @@
 
         isLoading.value = true;
         try {
-            const data = await createCandidate(itemState.value);
+            const res = await api.v1.crmPublicServiceCreateCandidate({
+                payload: {
+                    gender: itemState.value.gender,
+                    name: itemState.value.name,
+                    surname: itemState.value.surname,
+                    birthday: {
+                        date: itemState.value.birthday,
+                    },
+                },
+            });
 
-            showSuccess();
+            if (res.error !== null) {
+                throw res.error;
+            }
 
-            await navigateTo(`/${module.urlName}/candidates/${data.id}`);
+            if (res.data) {
+                showSuccess();
+                await navigateTo(`/${module.urlName}/candidates/${res.data.item?.id}`);
+            }
         } catch (e) {
             if (e instanceof ApiError) {
                 errors.value = e.formHints();

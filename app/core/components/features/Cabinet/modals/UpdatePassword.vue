@@ -1,6 +1,7 @@
 <script setup lang="ts">
     import { ApiError } from '~/shared/errors/errors';
-    import { updatePassword } from '../api/updatePassword';
+
+    const api = useApi();
 
     const emit = defineEmits<{ close: [boolean] }>();
 
@@ -41,7 +42,13 @@
 
         isLoading.value = true;
         try {
-            await updatePassword(formState.value);
+            const res = await api.v1.usersTenantPublicServiceUpdateMyPassword({
+                payload: formState.value,
+            });
+
+            if (res.error !== null) {
+                throw res.error;
+            }
 
             emit('close', true);
         } catch (e) {

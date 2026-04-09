@@ -39,7 +39,7 @@
                 <div class="avatar">
                     <UAvatar
                         :alt="`${$authData.userData?.account.profileName} ${$authData.userData?.account.profileSurname}`"
-                        :src="$authData.userData?.account.profilePhoto100x100File ? $authData.userData?.account.profilePhoto100x100File.url : undefined"
+                        :src="$authData.userData?.account.profilePhotos?.s100x100File ? $authData.userData.account.profilePhotos.s100x100File.url : undefined"
                         size="md"
                     />
                 </div>

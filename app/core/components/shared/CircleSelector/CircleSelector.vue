@@ -1,11 +1,11 @@
-<script setup lang="ts">
+<script setup lang="ts" generic="T extends string | number">
     import type { ICicleMapItem } from './model/types/types';
 
     defineProps<{
-        map: ICicleMapItem[];
+        map: ICicleMapItem<T>[];
     }>();
 
-    const vModel = defineModel<number>();
+    const vModel = defineModel<T>();
 
     const colors: Record<string, string> = {
         '1': '#ff0000',

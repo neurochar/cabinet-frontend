@@ -11,14 +11,17 @@ interface Output {
 }
 
 export async function checkCode(input: Input): Promise<Output> {
+    const api = useApi();
+
     try {
-        await useNuxtApp().$apiFetch<Output>('v1/auth/check-code', {
-            method: 'POST',
-            body: {
-                id: input.id,
-                code: input.code,
-            },
+        const res = await api.v1.authTenantPublicServiceCheckAccountCode({
+            code: input.code,
+            id: input.id,
         });
+
+        if (res.error !== null) {
+            throw res.error;
+        }
 
         return {
             success: true,

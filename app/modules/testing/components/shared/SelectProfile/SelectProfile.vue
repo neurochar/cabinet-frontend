@@ -1,10 +1,10 @@
 <script setup lang="ts">
     import type { InputMenuItem } from '@nuxt/ui';
-    import { fetchProfile } from '~/modules/testing/domain/api/profile/fetchProfile';
-    import { fetchProfileList } from '~/modules/testing/domain/api/profile/fetchProfileList';
-    import type { IProfileItem, IProfileListItem } from '~/modules/testing/domain/model/types/profile';
+    import type { V1TestingListProfile, V1TestingProfile } from '~/api/generated/Api';
     import { ApiError } from '~/shared/errors/errors';
     import { declOfNum } from '~/shared/helpers/functions';
+
+    const api = useApi();
 
     const vModel = defineModel<string | null>({ default: null });
 
@@ -40,7 +40,7 @@
 
     let listController: AbortController | null = null;
 
-    const itemToInputMenuItem = (item: IProfileItem | IProfileListItem): InputMenuItem => {
+    const itemToInputMenuItem = (item: V1TestingProfile | V1TestingListProfile): InputMenuItem => {
         return {
             label: item.name,
             value: item.id,
@@ -57,16 +57,22 @@
 
             listController = new AbortController();
 
-            const data = await fetchProfileList(
+            const res = await api.v1.testingPublicServiceListProfiles(
                 {
-                    search: searchTerm.value,
-                    limit: 100,
+                    searchQuery: searchTerm.value,
+                    limit: String(100),
                 },
-                listController,
+                {
+                    signal: listController.signal,
+                },
             );
 
-            if (data.items) {
-                items.value = data.items.map(itemToInputMenuItem);
+            if (res.error !== null) {
+                throw res.error;
+            }
+
+            if (res.data?.items) {
+                items.value = res.data.items.map(itemToInputMenuItem);
             }
         } catch (e: unknown) {
             console.error(e);
@@ -103,9 +109,17 @@
 
             itemController = new AbortController();
 
-            const data = await fetchProfile(value, itemController);
+            const res = await api.v1.testingPublicServiceGetProfile(value, {
+                signal: itemController.signal,
+            });
 
-            menuValue.value = itemToInputMenuItem(data);
+            if (res.error !== null) {
+                throw res.error;
+            }
+
+            if (res.data?.item) {
+                menuValue.value = itemToInputMenuItem(res.data.item);
+            }
         } catch (e: unknown) {
             console.error(e);
             if (e instanceof ApiError) {

@@ -1,5 +1,6 @@
 <script setup lang="ts">
-    import type { IRoomItem, IRoomItemState } from '~/modules/testing/domain/model/types/room';
+    import type { V1TestingRoom } from '~/api/generated/Api';
+    import type { IRoomItemState } from '~/modules/testing/domain/model/types/room';
 
     const props = defineProps<{
         disabled?: boolean;
@@ -8,7 +9,7 @@
 
     const dataModel = defineModel<IRoomItemState>({ required: true });
 
-    const dataItem = defineModel<IRoomItem | null>('dataItem', { required: true });
+    const dataItem = defineModel<V1TestingRoom | null>('dataItem', { required: true });
 
     const show = ref(true);
 

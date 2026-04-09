@@ -1,12 +1,12 @@
 <script setup lang="ts">
+    import { V1PersonalityTraitPriority, type V1TestingRoom } from '~/api/generated/Api';
     import { showErrors } from '~/core/components/shared/inform/toast';
     import { module as crmModule } from '~/modules/crm/const';
     import { module } from '~/modules/testing/const';
     import { setModuleBreadcrums } from '~/modules/testing/domain/actions/setModuleBreadcrums';
     import { loadPersonalityTraitsList } from '~/modules/testing/domain/api/personality_trait/fetchPersonalityTraitsList';
-    import { fetchRoom } from '~/modules/testing/domain/api/room/fetchRoom';
-    import { priorityToConfig } from '~/modules/testing/domain/model/types/profile';
-    import { statusToConfig, type IRoomItem } from '~/modules/testing/domain/model/types/room';
+    import { IPersonalityTraitPriorityConfig } from '~/modules/testing/domain/model/types/profile';
+    import { IRoomStatusConfig } from '~/modules/testing/domain/model/types/room';
     import { setMenu } from '~/plugins/app/model/actions/setMenu';
     import { ApiError } from '~/shared/errors/errors';
 
@@ -30,7 +30,9 @@
         },
     ]);
 
-    const itemObject = ref<IRoomItem | null>(null);
+    const api = useApi();
+
+    const itemObject = ref<V1TestingRoom | null>(null);
 
     const isLoading = ref(false);
 
@@ -40,11 +42,16 @@
 
     const isLoadingAnything = computed(() => isLoading.value || !personalityTraitsList.value);
 
-    const fetchItem = async (): Promise<IRoomItem | null> => {
+    const fetchItem = async (): Promise<V1TestingRoom | null> => {
         isLoading.value = true;
         try {
-            const data = await fetchRoom(props.id);
-            return data;
+            const res = await api.v1.testingPublicServiceGetRoom(props.id);
+
+            if (res.error !== null) {
+                throw res.error;
+            }
+
+            return res.data?.item || null;
         } catch (e) {
             if (e instanceof ApiError) {
                 if (e.code === 404) {
@@ -63,7 +70,7 @@
         return null;
     };
 
-    const updateItemState = (item: IRoomItem) => {
+    const updateItemState = (item: V1TestingRoom) => {
         itemObject.value = item;
     };
 
@@ -85,28 +92,28 @@
     });
 
     const traitsSorted = computed(() => {
-        return Object.entries(itemObject.value?.personalityTraitsMap || []).toSorted((a, b) => {
-            return b[1].priority - a[1].priority;
+        return Object.entries(itemObject.value?.personalityTraits?.map || {}).toSorted((a, b) => {
+            return IPersonalityTraitPriorityConfig[b[1].priority].sort - IPersonalityTraitPriorityConfig[a[1].priority].sort;
         });
     });
 
-    const getTraitByID = (id: number) => {
-        return personalityTraitsList.value?.items.find((trait) => trait.ID === id);
+    const getTraitByID = (id: string) => {
+        return personalityTraitsList.value?.items?.find((trait) => trait.id === id);
     };
 
     const getTraitResultByID = (id: string) => {
-        return itemObject.value?.result?.traits[id];
+        return itemObject.value?.result?.traits?.[id];
     };
 
-    const priorityMapBgColor = (priority: number): string | undefined => {
+    const priorityMapBgColor = (priority: V1PersonalityTraitPriority): string | undefined => {
         switch (priority) {
-            case 0:
+            case V1PersonalityTraitPriority.PRESONALITY_TRAIT_PRIORITY_NONE:
                 return '#8deb81';
-            case 1:
+            case V1PersonalityTraitPriority.PRESONALITY_TRAIT_PRIORITY_LOW:
                 return '#3cbd73';
-            case 2:
+            case V1PersonalityTraitPriority.PRESONALITY_TRAIT_PRIORITY_MEDIUM:
                 return '#afad00';
-            case 3:
+            case V1PersonalityTraitPriority.PRESONALITY_TRAIT_PRIORITY_HIGH:
                 return '#f73131';
             default:
                 return undefined;
@@ -157,7 +164,7 @@
                         <NuxtLink
                             :to="`/${crmModule.urlName}/candidates/${itemObject.candidate?.id}`"
                             :class="$style.link"
-                            >{{ itemObject.candidate?.candidateName }} {{ itemObject.candidate?.candidateSurname }}</NuxtLink
+                            >{{ itemObject.candidate?.name }} {{ itemObject.candidate?.surname }}</NuxtLink
                         >
                     </div>
                 </div>
@@ -165,7 +172,7 @@
             <div v-if="itemObject">
                 <div class="title">Статус:</div>
                 <div class="value">
-                    {{ statusToConfig(itemObject.status)?.label }}
+                    {{ IRoomStatusConfig[itemObject.status].label }}
                 </div>
             </div>
         </div>
@@ -195,15 +202,15 @@
                     v-for="[traitID, traitConfig] in traitsSorted"
                     :key="traitID"
                 >
-                    <div v-if="getTraitByID(Number(traitID))">
+                    <div v-if="getTraitByID(traitID)">
                         <div class="title">
-                            {{ getTraitByID(Number(traitID))?.Name }}:
+                            {{ getTraitByID(traitID)?.name }}:
                             <div class="desc">
                                 Приоритет:
                                 <span
                                     style="text-transform: lowercase"
                                     :style="{ color: priorityMapBgColor(traitConfig.priority) }"
-                                    >{{ priorityToConfig(traitConfig.priority)?.label }}</span
+                                    >{{ IPersonalityTraitPriorityConfig[traitConfig.priority].label }}</span
                                 >
                             </div>
                         </div>

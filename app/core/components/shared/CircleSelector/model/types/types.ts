@@ -1,5 +1,5 @@
-export interface ICicleMapItem {
-    value: number;
+export interface ICicleMapItem<T extends string | number> {
+    value: T;
     title: string;
     color: string | undefined;
 }

@@ -1,14 +1,15 @@
 <script setup lang="ts">
-    import { ICandidateItemGenderConfig, type ICandidateItem, type ICandidateItemState } from '~/modules/crm/domain/model/types/candidate';
+    import type { V1Candidate } from '~/api/generated/Api';
+    import { ICandidateItemGenderConfig, type CandidateFromState } from '~/modules/crm/domain/model/types/candidate';
 
     const props = defineProps<{
         disabled?: boolean;
         mode: 'new' | 'edit';
     }>();
 
-    const dataModel = defineModel<ICandidateItemState>({ required: true });
+    const dataModel = defineModel<CandidateFromState>({ required: true });
 
-    const dataItem = defineModel<ICandidateItem | null>('dataItem', { required: true });
+    const dataItem = defineModel<V1Candidate | null>('dataItem', { required: true });
 
     const show = ref(true);
 
@@ -29,9 +30,36 @@
 
     const gendersListOptions = computed(() => {
         return Object.entries(ICandidateItemGenderConfig).map(([key, value]) => ({
-            value: Number(key),
+            value: key,
             label: value.label,
         }));
+    });
+
+    const birthday = computed<string | null>({
+        get() {
+            const v = dataModel.value.birthday;
+            if (!v) {
+                return null;
+            }
+            const mm = String(v.month).padStart(2, '0');
+            const dd = String(v.day).padStart(2, '0');
+
+            return `${mm}.${dd}.${v.year}`;
+        },
+        set(val) {
+            if (!val) {
+                dataModel.value.birthday = undefined;
+                return;
+            }
+
+            const d = new Date(val);
+
+            dataModel.value.birthday = {
+                year: d.getFullYear(),
+                month: d.getMonth() + 1,
+                day: d.getDate(),
+            };
+        },
     });
 </script>
 
@@ -44,7 +72,7 @@
             <div class="title">Имя:</div>
             <div class="value">
                 <UInput
-                    v-model="dataModel.candidateName"
+                    v-model="dataModel.name"
                     size="xl"
                     class="w-full"
                     :disabled="disabled"
@@ -55,7 +83,7 @@
             <div class="title">Фамилия:</div>
             <div class="value">
                 <UInput
-                    v-model="dataModel.candidateSurname"
+                    v-model="dataModel.surname"
                     size="xl"
                     class="w-full"
                     :disabled="disabled"
@@ -65,11 +93,11 @@
         <div>
             <div class="title">
                 Пол:
-                <div class="desc">Указывать необязательно, но знание поможет нашим алгоритмам точнее работать карточкой кандидата</div>
+                <div class="desc">Указывать необязательно, но знание поможет нашим алгоритмам точнее работать карточкой с кандидата</div>
             </div>
             <div class="value">
                 <USelect
-                    v-model="dataModel.candidateGender"
+                    v-model="dataModel.gender"
                     size="xl"
                     :items="gendersListOptions"
                     class="w-full"
@@ -80,11 +108,11 @@
         <div>
             <div class="title">
                 Дата рождения:
-                <div class="desc">Указывать необязательно, но знание поможет нашим алгоритмам точнее работать карточкой кандидата</div>
+                <div class="desc">Указывать необязательно, но знание поможет нашим алгоритмам точнее работать карточкой с кандидата</div>
             </div>
             <div class="value">
                 <SharedDatetimePicker
-                    v-model="dataModel.candidateBirthday"
+                    v-model="birthday"
                     size="xl"
                 />
             </div>

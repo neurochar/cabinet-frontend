@@ -18,7 +18,7 @@ export interface IUserAccount {
 }
 
 export interface IUserRole {
-    id: number;
+    id: string;
     rank: number;
     name: string;
 }

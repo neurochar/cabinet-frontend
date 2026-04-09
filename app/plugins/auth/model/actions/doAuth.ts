@@ -1,7 +1,4 @@
-import { GetDefaultHeaders } from '~/shared/api/headers';
-import { tryToCatchApiErrors } from '~/shared/errors/errors';
 import { AUTH_ACCESS_TOKEN_KEY } from '../const/const';
-import type { IAuthUserData } from '../types/auth.types';
 import { setAuthUserData } from './setAuthData';
 
 export const doAuth = async (): Promise<void> => {
@@ -10,14 +7,18 @@ export const doAuth = async (): Promise<void> => {
         return;
     }
 
-    try {
-        const result = await useNuxtApp().$apiFetch<IAuthUserData>('v1/auth/whoiam', {
-            method: 'GET',
-            headers: GetDefaultHeaders(undefined),
-        });
+    const api = useApi();
 
-        setAuthUserData(result);
-    } catch (e: unknown) {
-        throw tryToCatchApiErrors(e);
+    const result = await api.v1.authTenantPublicServiceWhoIAm();
+
+    if (result.error != null) {
+        throw result.error;
+    }
+
+    if (result.data) {
+        setAuthUserData({
+            account: result.data.account!,
+            tenant: result.data.tenant!,
+        });
     }
 };

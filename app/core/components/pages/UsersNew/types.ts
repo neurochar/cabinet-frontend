@@ -1,12 +1,10 @@
-import type { IFile } from '~/shared/types/files';
+import type { V1AccountTenantPhotoFiles } from '~/api/generated/Api';
 
-export interface FormState {
+export type FormState = {
     email: string;
-    roleID: number;
+    roleID: string;
     password: string;
-
-    profileName: '';
-    profileSurname: '';
-    profilePhotoOriginalFile: null | IFile;
-    profilePhoto100x100File: null | IFile;
-}
+    profileName: string;
+    profileSurname: string;
+    profilePhotos?: V1AccountTenantPhotoFiles;
+};

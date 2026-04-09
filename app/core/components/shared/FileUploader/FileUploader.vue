@@ -117,7 +117,7 @@
                 }
 
                 const item: UploadedFile = {
-                    targets: uploaded.files,
+                    targets: uploaded.data.map!,
                 };
 
                 files.value.push(item);

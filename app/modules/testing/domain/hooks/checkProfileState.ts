@@ -7,7 +7,7 @@ export function checkProfileState(data: IProfileItemState): string[] {
         result.push('Название не указано');
     }
 
-    if (Object.entries(data.personalityTraitsMap).length === 0) {
+    if (Object.entries(data.personalityTraits?.map || {}).length === 0) {
         result.push('Черты личности не указаны');
     }
 

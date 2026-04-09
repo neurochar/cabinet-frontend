@@ -16,14 +16,14 @@
         },
     ]);
 
-    const userRole = RoleByID(useNuxtApp().$authData.userData!.account.roleID);
+    const userRole = RoleByID(useNuxtApp().$authData.userData?.account.roleId || '0');
 </script>
 
 <template>
     <div>
-        <temaple v-if="userRole && userRole.rank == 1">
+        <template v-if="userRole && userRole.rank <= 2">
             <FeatureWorkspaceSettings />
-        </temaple>
+        </template>
         <template v-else>
             <WidgetError :code="403" />
         </template>

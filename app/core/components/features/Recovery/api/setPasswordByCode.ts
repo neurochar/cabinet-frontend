@@ -13,16 +13,19 @@ interface Output {
 }
 
 export async function setPasswordByCode(input: Input): Promise<Output> {
+    const api = useApi();
+
     try {
-        await useNuxtApp().$apiFetch<Output>('v1/auth/password-by-code', {
-            method: 'POST',
-            body: {
-                id: input.id,
-                code: input.code,
-                password: input.password,
-                password2: input.password2,
-            },
+        const res = await api.v1.authTenantPublicServiceUpdatePasswordByCode({
+            id: input.id,
+            code: input.code,
+            password: input.password,
+            password2: input.password2,
         });
+
+        if (res.error !== null) {
+            throw res.error;
+        }
 
         return {
             success: true,

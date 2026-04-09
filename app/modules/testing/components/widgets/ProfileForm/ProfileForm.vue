@@ -1,33 +1,26 @@
 <script setup lang="ts">
+    import { V1PersonalityTraitPriority, type V1PersonalityTrait, type V1TestingProfile } from '~/api/generated/Api';
     import type { ICicleMapItem } from '~/core/components/shared/CircleSelector/model/types/types';
-    import type { IPersonalityTraitItem } from '~/modules/testing/domain/model/types/personality_trait';
-    import {
-        IProfileItemPersonalityTraitMapPriorityConfig,
-        priorityToConfig,
-        type IProfileItem,
-        type IProfileItemState,
-    } from '~/modules/testing/domain/model/types/profile';
+    import { IPersonalityTraitPriorityConfig, type IProfileItemState } from '~/modules/testing/domain/model/types/profile';
 
     const props = defineProps<{
         disabled?: boolean;
         mode: 'new' | 'edit';
-        personalityTraitsList: IPersonalityTraitItem[];
+        personalityTraitsList: V1PersonalityTrait[];
     }>();
 
     const dataModel = defineModel<IProfileItemState>({ required: true });
 
-    const dataItem = defineModel<IProfileItem | null>('dataItem', { required: true });
+    const dataItem = defineModel<V1TestingProfile | null>('dataItem', { required: true });
 
-    const updateTraitPriorityInMap = (traitID: number, priority: number) => {
-        if (priority === 0) {
-            dataModel.value.personalityTraitsMap = Object.fromEntries(
-                Object.entries(dataModel.value.personalityTraitsMap).filter(([id]) => id !== traitID.toString()),
-            );
+    const updateTraitPriorityInMap = (traitID: string, priority?: V1PersonalityTraitPriority) => {
+        if (!priority || priority === V1PersonalityTraitPriority.PRESONALITY_TRAIT_PRIORITY_NONE) {
+            dataModel.value.personalityTraits.map = Object.fromEntries(Object.entries(dataModel.value.personalityTraits.map!).filter(([id]) => id !== traitID));
         } else {
-            if (dataModel.value.personalityTraitsMap[traitID.toString()]) {
-                dataModel.value.personalityTraitsMap[traitID.toString()]!.priority = priority;
+            if (dataModel.value.personalityTraits.map![traitID]) {
+                dataModel.value.personalityTraits.map![traitID]!.priority = priority;
             } else {
-                dataModel.value.personalityTraitsMap[traitID.toString()] = {
+                dataModel.value.personalityTraits.map![traitID] = {
                     priority: priority,
                     target: 5,
                 };
@@ -35,9 +28,9 @@
         }
     };
 
-    const updateTraitTargetInMap = (traitID: number, target: number) => {
-        if (dataModel.value.personalityTraitsMap[traitID.toString()]) {
-            dataModel.value.personalityTraitsMap[traitID.toString()]!.target = target;
+    const updateTraitTargetInMap = (traitID: string, target: number) => {
+        if (dataModel.value.personalityTraits.map![traitID]) {
+            dataModel.value.personalityTraits.map![traitID]!.target = target;
         }
     };
 
@@ -58,38 +51,38 @@
         rebuild,
     });
 
-    const priorityMap: ICicleMapItem[] = [
+    const priorityMap: ICicleMapItem<V1PersonalityTraitPriority>[] = [
         {
-            value: 0,
+            value: V1PersonalityTraitPriority.PRESONALITY_TRAIT_PRIORITY_NONE,
             color: '#d9d9d9',
-            title: IProfileItemPersonalityTraitMapPriorityConfig[0].label,
+            title: IPersonalityTraitPriorityConfig[V1PersonalityTraitPriority.PRESONALITY_TRAIT_PRIORITY_NONE].label,
         },
         {
-            value: 1,
+            value: V1PersonalityTraitPriority.PRESONALITY_TRAIT_PRIORITY_LOW,
             color: '#8deb81',
-            title: IProfileItemPersonalityTraitMapPriorityConfig[1].label,
+            title: IPersonalityTraitPriorityConfig[V1PersonalityTraitPriority.PRESONALITY_TRAIT_PRIORITY_LOW].label,
         },
         {
-            value: 2,
+            value: V1PersonalityTraitPriority.PRESONALITY_TRAIT_PRIORITY_MEDIUM,
             color: '#e8e484',
-            title: IProfileItemPersonalityTraitMapPriorityConfig[2].label,
+            title: IPersonalityTraitPriorityConfig[V1PersonalityTraitPriority.PRESONALITY_TRAIT_PRIORITY_MEDIUM].label,
         },
         {
-            value: 3,
+            value: V1PersonalityTraitPriority.PRESONALITY_TRAIT_PRIORITY_HIGH,
             color: '#f73131',
-            title: IProfileItemPersonalityTraitMapPriorityConfig[3].label,
+            title: IPersonalityTraitPriorityConfig[V1PersonalityTraitPriority.PRESONALITY_TRAIT_PRIORITY_HIGH].label,
         },
     ];
 
-    const priorityMapBgColor = (priority: number): string | undefined => {
+    const priorityMapBgColor = (priority: V1PersonalityTraitPriority): string | undefined => {
         switch (priority) {
-            case 0:
+            case V1PersonalityTraitPriority.PRESONALITY_TRAIT_PRIORITY_NONE:
                 return '#fafafa';
-            case 1:
+            case V1PersonalityTraitPriority.PRESONALITY_TRAIT_PRIORITY_LOW:
                 return '#f3fff2';
-            case 2:
+            case V1PersonalityTraitPriority.PRESONALITY_TRAIT_PRIORITY_MEDIUM:
                 return '#fffeef';
-            case 3:
+            case V1PersonalityTraitPriority.PRESONALITY_TRAIT_PRIORITY_HIGH:
                 return '#fff2f2';
             default:
                 return undefined;
@@ -118,14 +111,20 @@
             v-for="trait in personalityTraitsList"
             :key="trait.id"
         >
-            <div :style="{ backgroundColor: priorityMapBgColor(dataModel.personalityTraitsMap[trait.ID.toString()]?.priority || 0) }">
+            <div
+                :style="{
+                    backgroundColor: priorityMapBgColor(
+                        dataModel.personalityTraits.map![trait.id]?.priority || V1PersonalityTraitPriority.PRESONALITY_TRAIT_PRIORITY_NONE,
+                    ),
+                }"
+            >
                 <div class="title">
-                    {{ trait.Name }}:
+                    {{ trait.name }}:
                     <div
-                        v-if="trait.Description"
+                        v-if="trait.description"
                         class="desc"
                     >
-                        {{ trait.Description }}
+                        {{ trait.description }}
                     </div>
                 </div>
                 <div class="value">
@@ -133,19 +132,31 @@
                         <div :class="$style.title">Приоритет:</div>
                         <div :class="$style.input">
                             <SharedCircleSelector
-                                :model-value="dataModel.personalityTraitsMap[trait.ID.toString()]?.priority || 0"
+                                :model-value="
+                                    dataModel.personalityTraits.map![trait.id]?.priority || V1PersonalityTraitPriority.PRESONALITY_TRAIT_PRIORITY_NONE
+                                "
                                 :map="priorityMap"
-                                @update:model-value="updateTraitPriorityInMap(trait.ID, Number($event))"
+                                @update:model-value="updateTraitPriorityInMap(trait.id, $event)"
                             />
                         </div>
                         <div :class="$style.value">
-                            <span :class="(dataModel.personalityTraitsMap[trait.ID.toString()]?.priority || 0) > 0 ? $style.bold : undefined">{{
-                                priorityToConfig(dataModel.personalityTraitsMap[trait.ID.toString()]?.priority || 0)?.label
-                            }}</span>
+                            <span
+                                :class="
+                                    (dataModel.personalityTraits.map![trait.id]?.priority || V1PersonalityTraitPriority.PRESONALITY_TRAIT_PRIORITY_NONE) !==
+                                    V1PersonalityTraitPriority.PRESONALITY_TRAIT_PRIORITY_NONE
+                                        ? $style.bold
+                                        : undefined
+                                "
+                                >{{
+                                    IPersonalityTraitPriorityConfig[
+                                        dataModel.personalityTraits.map![trait.id]?.priority || V1PersonalityTraitPriority.PRESONALITY_TRAIT_PRIORITY_NONE
+                                    ].label
+                                }}</span
+                            >
                         </div>
                     </div>
                     <div
-                        v-if="dataModel.personalityTraitsMap[trait.ID.toString()]"
+                        v-if="dataModel.personalityTraits.map?.[trait.id]"
                         :class="$style.sliderSelector"
                     >
                         <div :class="$style.title">Целевое значение:</div>
@@ -153,15 +164,15 @@
                             <USlider
                                 :min="0"
                                 :max="10"
-                                :model-value="dataModel.personalityTraitsMap[trait.ID.toString()]?.target || 0"
+                                :model-value="dataModel.personalityTraits.map[trait.id]?.target || 0"
                                 color="secondary"
-                                @update:model-value="updateTraitTargetInMap(trait.ID, Number($event))"
+                                @update:model-value="updateTraitTargetInMap(trait.id, Number($event))"
                             />
                         </div>
                         <div :class="$style.names">
-                            <div :class="$style.left">{{ trait.LeftStateName }}</div>
-                            <div :class="$style.value">{{ dataModel.personalityTraitsMap[trait.ID.toString()]?.target || 0 }}</div>
-                            <div :class="$style.right">{{ trait.RightStateName }}</div>
+                            <div :class="$style.left">{{ trait.leftStateName }}</div>
+                            <div :class="$style.value">{{ dataModel.personalityTraits.map[trait.id]?.target || 0 }}</div>
+                            <div :class="$style.right">{{ trait.rightStateName }}</div>
                         </div>
                     </div>
                 </div>

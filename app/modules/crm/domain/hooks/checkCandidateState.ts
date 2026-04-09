@@ -1,13 +1,13 @@
-import type { ICandidateItemState } from '../model/types/candidate';
+import type { CandidateFromState } from '../model/types/candidate';
 
-export function checkCandidateState(data: ICandidateItemState): string[] {
+export function checkCandidateState(data: CandidateFromState): string[] {
     const result: string[] = [];
 
-    if (!data.candidateName) {
+    if (!data.name) {
         result.push('Имя кандидата не указано');
     }
 
-    if (!data.candidateSurname) {
+    if (!data.surname) {
         result.push('Фамилия кандидата не указана');
     }
 

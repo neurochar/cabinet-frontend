@@ -1,31 +1,9 @@
-export enum ICandidateItemGender {
-    'unknown' = 0,
-    'male' = 1,
-    'female' = 2,
-}
+import { V1Gender, type V1Candidate } from '~/api/generated/Api';
 
-export const ICandidateItemGenderConfig: Record<ICandidateItemGender, { label: string }> = {
-    [ICandidateItemGender.unknown]: { label: 'Неизвестно' },
-    [ICandidateItemGender.male]: { label: 'Мужской' },
-    [ICandidateItemGender.female]: { label: 'Женский' },
+export const ICandidateItemGenderConfig: Record<V1Gender, { label: string }> = {
+    [V1Gender.GENDER_UNSPECIFIED]: { label: 'Неизвестно' },
+    [V1Gender.GENDER_MALE]: { label: 'Мужской' },
+    [V1Gender.GENDER_FEMALE]: { label: 'Женский' },
 };
 
-export interface ICandidateItem {
-    _version?: number;
-
-    id: string;
-    tenantID: string;
-    candidateName: string;
-    candidateSurname: string;
-    candidateGender: ICandidateItemGender;
-    candidateBirthday: string | null;
-}
-
-export type ICandidateListItem = ICandidateItem;
-
-export interface ICandidateItemState {
-    candidateName: string;
-    candidateSurname: string;
-    candidateGender: number;
-    candidateBirthday: string | null;
-}
+export type CandidateFromState = Pick<V1Candidate, 'name' | 'surname' | 'birthday' | 'gender'>;

@@ -1,13 +1,7 @@
-import { FetchError } from 'ofetch';
+import type { FetchError } from 'ofetch';
+import type { V1LogoutResponse } from '~/api/generated/Api';
 import { AUTH_REFRESH_TOKEN_KEY } from '~/plugins/auth/model/const/const';
 import { GetDefaultHeaders } from '~/shared/api/headers';
-
-type BackendResponseDTO = {
-    accessJWT: string;
-    refreshLifeSec: number;
-    refreshJWT: string;
-    [key: string]: any;
-};
 
 export default defineEventHandler(async (event) => {
     const config = useRuntimeConfig();
@@ -24,7 +18,7 @@ export default defineEventHandler(async (event) => {
         const headers = GetDefaultHeaders(event);
         headers.set('Authorization', authHeader);
 
-        const response = await $fetch<BackendResponseDTO>('/v1/auth/logout', {
+        const response = await $fetch<V1LogoutResponse>('/v1/tenant/auth/logout', {
             baseURL: config.public.apiBase,
             method: 'POST',
             headers,
@@ -43,9 +37,13 @@ export default defineEventHandler(async (event) => {
 
         return response;
     } catch (e: unknown) {
-        if (e instanceof FetchError && e.statusCode) {
-            setResponseStatus(event, e.statusCode);
-            return e.data;
+        const err = e as FetchError;
+
+        const statusCode = err?.statusCode ?? err?.response?.status;
+
+        if (statusCode) {
+            setResponseStatus(event, statusCode);
+            return err.data;
         }
 
         throw e;

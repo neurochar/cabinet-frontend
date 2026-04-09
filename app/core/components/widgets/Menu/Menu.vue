@@ -9,7 +9,7 @@
     const appData = useState<IAppData>('app');
 
     const items = computed<NavigationMenuItem[][]>(() => {
-        const userRole = RoleByID(useNuxtApp().$authData.userData!.account.roleID);
+        const userRole = RoleByID(useNuxtApp().$authData.userData?.account.roleId || '0');
 
         const menu: NavigationMenuItem[][] = [
             [
@@ -23,7 +23,7 @@
                     active: 'workspace' === appData.value.menuSel,
                     defaultOpen: true,
                     children: [
-                        userRole && userRole.rank == 1
+                        userRole && userRole.rank <= 2
                             ? {
                                   label: 'Настройки',
                                   to: '/settings',

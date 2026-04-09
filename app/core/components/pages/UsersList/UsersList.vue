@@ -1,8 +1,7 @@
 <script setup lang="ts">
     import type { DropdownMenuItem, TableColumn } from '@nuxt/ui';
-    import { fetchAccountsList } from '~/core/domain/api/fetchAccountsList';
+    import type { V1AccountTenant } from '~/api/generated/Api';
     import { RoleByID } from '~/core/domain/model/const/roles';
-    import type { IUserAccount } from '~/core/domain/model/types/users';
     import { setAppBreadcrumbs } from '~/plugins/app/model/actions/setAppBreadcrumbs';
     import { setMenu } from '~/plugins/app/model/actions/setMenu';
     import { ApiError } from '~/shared/errors/errors';
@@ -21,6 +20,8 @@
         },
     ]);
 
+    const api = useApi();
+
     const route = useRoute();
 
     let routePage = Number(route.query.page);
@@ -32,7 +33,7 @@
 
     const isLoading = ref(true);
 
-    const list = ref<IUserAccount[]>([]);
+    const list = ref<V1AccountTenant[]>([]);
 
     const defaultLimit = 20;
 
@@ -49,10 +50,18 @@
         isLoading.value = true;
 
         try {
-            const data = await fetchAccountsList(page.value, limit.value < 1 ? 1 : limit.value);
-            if (data.items) {
-                list.value = data.items;
-                total.value = data.total;
+            const res = await api.v1.usersTenantPublicServiceListAccounts({
+                limit: String(limit.value < 1 ? 1 : limit.value),
+                offset: String((page.value - 1) * limit.value),
+            });
+
+            if (res.error !== null) {
+                throw res.error;
+            }
+
+            if (res.data && res.data.items) {
+                list.value = res.data.items;
+                total.value = res.data.total;
 
                 await navigateTo(
                     {
@@ -87,7 +96,7 @@
         }, 100);
     });
 
-    const columns: TableColumn<IUserAccount>[] = [
+    const columns: TableColumn<V1AccountTenant>[] = [
         {
             id: 'account',
             header: 'Аккаунт',
@@ -105,7 +114,7 @@
         },
     ];
 
-    function getDropdownActions(item: IUserAccount): DropdownMenuItem[][] {
+    function getDropdownActions(item: V1AccountTenant): DropdownMenuItem[][] {
         return [
             [
                 {
@@ -137,7 +146,9 @@
             :ui="{ td: '__whitespace-normal' }"
         >
             <template #account-cell="{ row }">
-                <div style="font-size: 10px">{{ row.original.id }}</div>
+                <div style="font-size: 10px; text-decoration: underline">
+                    <NuxtLink :to="`/users/${row.original.id}`">{{ row.original.id }}</NuxtLink>
+                </div>
                 <div>
                     <b>{{ row.original.email }}</b>
                 </div>
@@ -153,7 +164,7 @@
                     <div>
                         <UAvatar
                             :alt="`${row.original.profileName} ${row.original.profileSurname}`"
-                            :src="row.original.profilePhoto100x100File ? row.original.profilePhoto100x100File.url : undefined"
+                            :src="row.original.profilePhotos?.s100x100File ? row.original.profilePhotos.s100x100File.url : undefined"
                             size="xl"
                         />
                     </div>
@@ -165,7 +176,7 @@
             <template #info-cell="{ row }">
                 <div>
                     <div>
-                        <span class="text-graylight-600">Роль:</span> <b>{{ RoleByID(row.original.roleID)?.name }}</b>
+                        <span class="text-graylight-600">Роль:</span> <b>{{ RoleByID(row.original.roleId)?.name }}</b>
                     </div>
                     <div>
                         <span class="text-graylight-600">Статус:</span>

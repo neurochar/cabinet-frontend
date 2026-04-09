@@ -1,12 +1,10 @@
 <script setup lang="ts">
     import type { DropdownMenuItem, TableColumn } from '@nuxt/ui';
+    import { V1RoomStatus, type V1TestingListRoom } from '~/api/generated/Api';
     import Confirm from '~/core/components/shared/Confirm/modals/Confirm.vue';
     import { showErrors, showSuccess } from '~/core/components/shared/inform/toast';
     import { module } from '~/modules/testing/const';
     import { setModuleBreadcrums } from '~/modules/testing/domain/actions/setModuleBreadcrums';
-    import { deleteRoom } from '~/modules/testing/domain/api/room/deleteRoom';
-    import { fetchRoomList } from '~/modules/testing/domain/api/room/fetchRoomList';
-    import { IRoomStatus, statusToConfig, type IRoomListItem } from '~/modules/testing/domain/model/types/room';
     import { setMenu } from '~/plugins/app/model/actions/setMenu';
     import { ApiError } from '~/shared/errors/errors';
 
@@ -22,9 +20,31 @@
         },
     ]);
 
+    const api = useApi();
+
+    const route = useRoute();
+
+    let routePage = Number(route.query.page);
+    if (!routePage || isNaN(routePage)) {
+        routePage = 1;
+    }
+
+    const page = ref(routePage);
+
     const isLoading = ref(true);
 
-    const list = ref<IRoomListItem[]>([]);
+    const list = ref<V1TestingListRoom[]>([]);
+
+    const defaultLimit = 20;
+
+    let routeLimit = Number(route.query.limit);
+    if (!routeLimit || isNaN(routeLimit)) {
+        routeLimit = defaultLimit;
+    }
+
+    const limit = ref(routeLimit);
+
+    const total = ref(0);
 
     const listPrepared = computed(() => {
         return list.value;
@@ -34,9 +54,29 @@
         isLoading.value = true;
 
         try {
-            const data = await fetchRoomList();
-            if (data.items) {
-                list.value = data.items;
+            const res = await api.v1.testingPublicServiceListRooms({
+                limit: String(limit.value < 1 ? 1 : limit.value),
+                offset: String((page.value - 1) * limit.value),
+            });
+
+            if (res.error !== null) {
+                throw res.error;
+            }
+
+            if (res.data && res.data.items) {
+                list.value = res.data.items;
+                total.value = res.data.total;
+
+                await navigateTo(
+                    {
+                        query: {
+                            ...route.query,
+                            page: page.value > 1 ? page.value : undefined,
+                            limit: limit.value !== defaultLimit ? limit.value.toString() : undefined,
+                        },
+                    },
+                    { replace: true },
+                );
             }
         } catch (e: unknown) {
             if (e instanceof ApiError) {
@@ -46,6 +86,19 @@
             isLoading.value = false;
         }
     };
+
+    const onPageUpdate = (p: number) => {
+        if (isLoading.value) return;
+        page.value = p;
+        fetchData();
+    };
+
+    watch(limit, () => {
+        page.value = 1;
+        setTimeout(() => {
+            fetchData();
+        }, 100);
+    });
 
     const removeItem = async (id: string): Promise<boolean> => {
         const modal = useOverlay().create(Confirm, {
@@ -60,7 +113,10 @@
         const shouldDelete = await instance.result;
         if (shouldDelete) {
             try {
-                await deleteRoom(id);
+                const res = await api.v1.testingPublicServiceDeleteRoom(id);
+                if (res.error !== null) {
+                    throw res.error;
+                }
 
                 showSuccess('Объект удален');
 
@@ -75,7 +131,7 @@
         return false;
     };
 
-    const columns: TableColumn<IRoomListItem>[] = [
+    const columns: TableColumn<V1TestingListRoom>[] = [
         {
             id: 'id',
             header: 'ID',
@@ -85,11 +141,15 @@
             header: 'Информация',
         },
         {
+            id: 'result',
+            header: 'Результат',
+        },
+        {
             id: 'action',
         },
     ];
 
-    function getDropdownActions(item: IRoomListItem): DropdownMenuItem[][] {
+    function getDropdownActions(item: V1TestingListRoom): DropdownMenuItem[][] {
         return [
             [
                 {
@@ -132,21 +192,32 @@
             :ui="{ td: '__whitespace-normal' }"
         >
             <template #id-cell="{ row }">
-                <div style="font-size: 10px">{{ row.original.id }}</div>
-                <div :style="{ color: row.original.status === IRoomStatus.not_started ? 'red' : 'green' }">
-                    {{ statusToConfig(row.original.status)?.label }}
+                <div style="font-size: 10px; text-decoration: underline">
+                    <NuxtLink :to="`/${module.urlName}/rooms/${row.original.id}`">{{ row.original.id }}</NuxtLink>
                 </div>
             </template>
             <template #info-cell="{ row }">
                 <template v-if="row.original.candidate">
                     <div>
-                        Кандидат: <b>{{ row.original.candidate.candidateName }} {{ row.original.candidate.candidateSurname }}</b>
+                        Кандидат: <b>{{ row.original.candidate?.name }} {{ row.original.candidate?.surname }}</b>
                     </div>
                 </template>
                 <template v-if="row.original.profile">
                     <div>
-                        Профиль: <b>{{ row.original.profile.name }}</b>
+                        Профиль: <b>{{ row.original.profile?.name }}</b>
                     </div>
+                </template>
+            </template>
+            <template #result-cell="{ row }">
+                <template v-if="row.original.status === V1RoomStatus.ROOM_STATUS_FINISHED">
+                    <template v-if="row.original.result">
+                        <div>
+                            Совпадение: <b>{{ row.original.result.totalMatch }}%</b>
+                        </div>
+                    </template>
+                </template>
+                <template v-else>
+                    <div style="color: var(--ui-color-graylight-500)">Тестирование не завершено</div>
                 </template>
             </template>
             <template #action-cell="{ row }">
@@ -162,6 +233,17 @@
                 </div>
             </template>
         </UTable>
+        <SharedPaginator
+            v-model="limit"
+            :disabled="isLoading"
+        >
+            <UPagination
+                :page="page"
+                :items-per-page="Number(limit)"
+                :total="Number(total)"
+                @update:page="onPageUpdate"
+            />
+        </SharedPaginator>
     </div>
 </template>
 

@@ -1,4 +1,5 @@
-import { FetchError } from 'ofetch';
+import type { FetchError } from 'ofetch';
+import type { V1AccountVerifyEmailRequest, V1AccountVerifyEmailResponse } from '~/api/generated/Api';
 import { GetDefaultHeaders } from '~/shared/api/headers';
 
 export default defineEventHandler(async (event) => {
@@ -16,14 +17,14 @@ export default defineEventHandler(async (event) => {
     }
 
     try {
-        await $fetch('/v1/auth/verify-email', {
+        await $fetch<V1AccountVerifyEmailResponse>('/v1/tenant/auth/verify-email', {
             baseURL: config.public.apiBase,
             method: 'POST',
             headers: GetDefaultHeaders(event),
-            params: {
+            body: {
                 code: code,
-                code_id: codeID,
-            },
+                codeId: codeID,
+            } as V1AccountVerifyEmailRequest,
         });
 
         const url = '/?account-verified=true';
@@ -31,9 +32,12 @@ export default defineEventHandler(async (event) => {
         sendRedirect(event, url, 302);
         return;
     } catch (e: unknown) {
-        if (e instanceof FetchError && e.statusCode) {
-            setResponseStatus(event, e.statusCode);
-            return e.data;
+        const err = e as FetchError;
+
+        const statusCode = err?.statusCode ?? err?.response?.status;
+
+        if (statusCode) {
+            setResponseStatus(event, statusCode);
         }
 
         throw e;

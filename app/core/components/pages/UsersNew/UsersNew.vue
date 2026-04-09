@@ -1,6 +1,5 @@
 <script setup lang="ts">
     import { SharedFileUploader } from '#components';
-    import { createUser } from '~/core/domain/api/createUser';
     import { getAvailableRolesForCreateUser } from '~/core/domain/hooks/getAvailableRolesForCreateUser';
     import { PROFILE_PHOTO_100X100_TARGET, PROFILE_PHOTO_ORIGINAL_TARGET } from '~/core/domain/model/const/conts';
     import { setAppBreadcrumbs } from '~/plugins/app/model/actions/setAppBreadcrumbs';
@@ -28,37 +27,37 @@
         },
     ]);
 
+    const api = useApi();
+
     const genPassword = () => {
         itemState.value.password = generatePassword(10, { symbols: false });
     };
 
     const rolesList = computed(() => {
-        return getAvailableRolesForCreateUser(useNuxtApp().$authData.userData!.account.roleID);
+        return getAvailableRolesForCreateUser(useNuxtApp().$authData.userData!.account.roleId);
     });
 
     const itemState = ref<FormState>({
         email: '',
-        roleID: rolesList.value.length ? rolesList.value[rolesList.value.length - 1]!.id : 0,
+        roleID: rolesList.value.length ? rolesList.value[rolesList.value.length - 1]!.id : '0',
         password: '',
-
         profileName: '',
         profileSurname: '',
-        profilePhotoOriginalFile: null,
-        profilePhoto100x100File: null,
     });
 
     genPassword();
 
     const onUpdateImage = (files: UploadedFile[]) => {
         if (files.length === 0) {
-            itemState.value.profilePhoto100x100File = null;
-            itemState.value.profilePhotoOriginalFile = null;
+            itemState.value.profilePhotos = undefined;
             return;
         }
 
         const file = files[0]!;
-        itemState.value.profilePhoto100x100File = file.targets[PROFILE_PHOTO_100X100_TARGET]!;
-        itemState.value.profilePhotoOriginalFile = file.targets[PROFILE_PHOTO_ORIGINAL_TARGET]!;
+        itemState.value.profilePhotos = {
+            originalFile: file.targets[PROFILE_PHOTO_ORIGINAL_TARGET]!,
+            s100x100File: file.targets[PROFILE_PHOTO_100X100_TARGET]!,
+        };
     };
 
     const rolesListOptions = computed(() => {
@@ -107,19 +106,29 @@
 
         isLoading.value = true;
         try {
-            const data = await createUser({
-                email: itemState.value.email,
-                password: itemState.value.password,
-                roleID: itemState.value.roleID,
-                profileName: itemState.value.profileName,
-                profileSurname: itemState.value.profileSurname,
-                profilePhoto100x100FileID: itemState.value.profilePhoto100x100File ? itemState.value.profilePhoto100x100File.id : null,
-                profilePhotoOriginalFileID: itemState.value.profilePhotoOriginalFile ? itemState.value.profilePhotoOriginalFile.id : null,
+            const res = await api.v1.usersTenantPublicServiceCreateAccount({
+                payload: {
+                    email: itemState.value.email,
+                    password: itemState.value.password,
+                    profileName: itemState.value.profileName,
+                    profileSurname: itemState.value.profileSurname,
+                    roleId: itemState.value.roleID,
+                    profilePhotos: itemState.value.profilePhotos
+                        ? {
+                              originalFileId: itemState.value.profilePhotos.originalFile!.id!,
+                              s100x100FileId: itemState.value.profilePhotos.s100x100File!.id!,
+                          }
+                        : undefined,
+                },
             });
+
+            if (res.error !== null) {
+                throw res.error;
+            }
 
             showSuccess();
 
-            navigateTo(`/users/${data.id}`);
+            navigateTo(`/users/${res.data?.item?.id}`);
         } catch (e) {
             if (e instanceof ApiError) {
                 errors.value = e.formHints();
@@ -264,15 +273,15 @@
                                 :disabled="isLoading"
                                 :lead-target="PROFILE_PHOTO_ORIGINAL_TARGET"
                                 mode="solo"
-                                upload-url="v1/users/photo_file"
+                                upload-url="/v1/tenant/users/profile-photo"
                                 accept-types="image/jpeg,image/png,image/webp,image/gif"
                                 :model-value="
-                                    itemState.profilePhotoOriginalFile && itemState.profilePhoto100x100File
+                                    itemState.profilePhotos?.originalFile && itemState.profilePhotos?.s100x100File
                                         ? [
                                               {
                                                   targets: {
-                                                      [PROFILE_PHOTO_ORIGINAL_TARGET]: itemState.profilePhotoOriginalFile,
-                                                      [PROFILE_PHOTO_100X100_TARGET]: itemState.profilePhoto100x100File,
+                                                      [PROFILE_PHOTO_ORIGINAL_TARGET]: itemState.profilePhotos.originalFile,
+                                                      [PROFILE_PHOTO_100X100_TARGET]: itemState.profilePhotos.s100x100File,
                                                   },
                                               },
                                           ]

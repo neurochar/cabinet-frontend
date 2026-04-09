@@ -1,14 +1,16 @@
+import type { V1RefreshResponse } from '~/api/generated/Api';
 import { tryToCatchApiErrors } from '~/shared/errors/errors';
-import type { IAuthTokens } from '../types/auth.types';
 import { setTokens } from './setAuthData';
 
 export const doRefresh = async (): Promise<void> => {
     try {
-        const result = await $fetch<IAuthTokens>('/api/auth/refresh', {
+        const result = await $fetch<V1RefreshResponse>('/api/auth/refresh', {
             method: 'POST',
         });
 
-        setTokens(result);
+        setTokens({
+            accessJWT: result.tokens!.accessJwt,
+        });
     } catch (e: unknown) {
         throw tryToCatchApiErrors(e);
     }

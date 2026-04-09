@@ -30,7 +30,7 @@
         try {
             const { email, password } = e.data;
 
-            await doLogin(email, password, tenantTextID);
+            await doLogin(email, password, tenantTextID || '');
 
             toast.add({
                 title: 'Успех',

@@ -1,13 +1,14 @@
+import type { V1FilesMap } from '~/api/generated/Api';
 import { ApiError, tryToCatchApiErrors } from '~/shared/errors/errors';
 
 export interface FetchUploadedFile {
     id: string;
-    url: string;
-    filename: string;
+    url?: string;
+    filename?: string;
 }
 
 export interface UploadFileResponse {
-    files: Record<string, FetchUploadedFile>;
+    data: V1FilesMap;
 }
 
 export async function fetchUpload(url: string, file: File) {

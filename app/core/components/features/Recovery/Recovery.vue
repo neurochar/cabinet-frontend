@@ -3,8 +3,9 @@
     import { getCurrentTenantTextID } from '~/plugins/auth/model/hooks/getCurrentTenantTextID';
     import { ApiError } from '~/shared/errors/errors';
     import { checkCode } from './api/checkCode';
-    import { passwordRecovery } from './api/passwordRecovery';
     import { setPasswordByCode } from './api/setPasswordByCode';
+
+    const api = useApi();
 
     const step = ref(1);
 
@@ -33,9 +34,21 @@
                 if (formState.value.email.length === 0) {
                     errors.push('E-mail не указан');
                 } else {
-                    const res = await passwordRecovery(formState.value.email, tenantTextID);
-                    formState.value.codeID = res.codeID;
-                    step.value = 2;
+                    const res = await api.v1.authTenantPublicServiceRequestPasswordRecovery({
+                        email: formState.value.email,
+                        tenantTextId: tenantTextID!,
+                    });
+
+                    if (res.error !== null) {
+                        if (res.error.code === 404) {
+                            errors.push('Пользователь не найден');
+                        } else {
+                            throw res.error;
+                        }
+                    } else {
+                        formState.value.codeID = res.data!.codeId;
+                        step.value = 2;
+                    }
                 }
             } else if (step.value === 2) {
                 if (formState.value.codeValue.length === 0) {

@@ -1,13 +1,7 @@
-import { FetchError } from 'ofetch';
+import type { FetchError } from 'ofetch';
+import type { V1RefreshResponse } from '~/api/generated/Api';
 import { AUTH_REFRESH_TOKEN_KEY } from '~/plugins/auth/model/const/const';
 import { GetDefaultHeaders } from '~/shared/api/headers';
-
-type BackendResponseDTO = {
-    accessJWT: string;
-    refreshLifeSec: number;
-    refreshJWT: string;
-    [key: string]: any;
-};
 
 export default defineEventHandler(async (event) => {
     const config = useRuntimeConfig();
@@ -21,7 +15,7 @@ export default defineEventHandler(async (event) => {
     }
 
     try {
-        const response = await $fetch<BackendResponseDTO>('/v1/auth/refresh', {
+        const response = await $fetch<V1RefreshResponse>('/v1/tenant/auth/refresh', {
             baseURL: config.public.apiBase,
             method: 'POST',
             headers: GetDefaultHeaders(event),
@@ -30,12 +24,14 @@ export default defineEventHandler(async (event) => {
             },
         });
 
-        const { refreshJWT, refreshLifeSec, ...otherResponse } = response;
+        const { refreshJwt, refreshLifeSec } = response.tokens!;
+        response.tokens!.refreshJwt = '';
+        response.tokens!.refreshLifeSec = 0;
 
         const host = getRequestHeader(event, 'host') || undefined;
         const cookieDomain = host?.split(':')[0];
 
-        setCookie(event, AUTH_REFRESH_TOKEN_KEY, refreshJWT, {
+        setCookie(event, AUTH_REFRESH_TOKEN_KEY, refreshJwt, {
             httpOnly: true,
             secure: config.public.isProd,
             sameSite: 'strict',
@@ -44,11 +40,15 @@ export default defineEventHandler(async (event) => {
             domain: cookieDomain,
         });
 
-        return otherResponse;
+        return response;
     } catch (e: unknown) {
-        if (e instanceof FetchError && e.statusCode) {
-            setResponseStatus(event, e.statusCode);
-            return e.data;
+        const err = e as FetchError;
+
+        const statusCode = err?.statusCode ?? err?.response?.status;
+
+        if (statusCode) {
+            setResponseStatus(event, statusCode);
+            return err.data;
         }
 
         throw e;

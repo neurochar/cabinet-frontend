@@ -1,15 +1,15 @@
 <script setup lang="ts">
+    import type { V1UpdateMyProfileRequestPayload } from '~/api/generated/Api';
     import { PROFILE_PHOTO_100X100_TARGET, PROFILE_PHOTO_ORIGINAL_TARGET } from '~/core/domain/model/const/conts';
     import { RoleByID } from '~/core/domain/model/const/roles';
     import { doAuth } from '~/plugins/auth/model';
     import { clearAuthUserData } from '~/plugins/auth/model/actions/clearAuthData';
-    import { ApiError } from '~/shared/errors/errors';
     import type { UploadedFile } from '../../shared/FileUploader/model/types/types';
-    import { updateAccount } from './api/updateAccount';
-    import UpdateEmail from './modals/UpdateEmail.vue';
     import UpdatePassword from './modals/UpdatePassword.vue';
 
     const isLoading = ref(false);
+
+    const api = useApi();
 
     const errors = ref<string[]>([]);
 
@@ -21,14 +21,15 @@
 
     const onUpdateImage = (files: UploadedFile[]) => {
         if (files.length === 0) {
-            profileFormState.value.profilePhoto100x100File = null;
-            profileFormState.value.profilePhotoOriginalFile = null;
+            profileFormState.value.profilePhotos = undefined;
             return;
         }
 
         const file = files[0]!;
-        profileFormState.value.profilePhoto100x100File = file.targets[PROFILE_PHOTO_100X100_TARGET]!;
-        profileFormState.value.profilePhotoOriginalFile = file.targets[PROFILE_PHOTO_ORIGINAL_TARGET]!;
+        profileFormState.value.profilePhotos = {
+            originalFile: file.targets[PROFILE_PHOTO_ORIGINAL_TARGET]!,
+            s100x100File: file.targets[PROFILE_PHOTO_100X100_TARGET]!,
+        };
     };
 
     const save = async () => {
@@ -48,25 +49,36 @@
 
         isLoading.value = true;
         try {
-            await updateAccount({
-                _version: profileFormState.value._version,
-                _skipVersionCheck: true,
+            const payload: V1UpdateMyProfileRequestPayload = {
                 profileName: profileFormState.value.profileName,
                 profileSurname: profileFormState.value.profileSurname,
-                profilePhotoOriginalFileID: profileFormState.value.profilePhotoOriginalFile ? profileFormState.value.profilePhotoOriginalFile.id : null,
-                profilePhoto100x100FileID: profileFormState.value.profilePhoto100x100File ? profileFormState.value.profilePhoto100x100File.id : null,
+            };
+
+            if (!profileFormState.value.profilePhotos) {
+                payload.profilePhotosClear = true;
+            } else {
+                payload.profilePhotos = {
+                    originalFileId: profileFormState.value.profilePhotos.originalFile!.id!,
+                    s100x100FileId: profileFormState.value.profilePhotos.s100x100File!.id!,
+                };
+            }
+
+            const res = await api.v1.usersTenantPublicServiceUpdateMyProfile({
+                payload: payload,
+                skipVersionCheck: true,
+                version: '0',
             });
 
-            await doAuth();
-            profileFormState.value = { ...useNuxtApp().$authData.userData!.account };
-
-            showSaveSuccess();
-        } catch (e) {
-            if (e instanceof ApiError) {
-                errors.value = e.formHints();
+            if (res.error !== null) {
+                errors.value = res.error.formHints();
             } else {
-                errors.value = ['Неизвестная ошибка'];
+                await doAuth();
+                profileFormState.value = { ...useNuxtApp().$authData.userData!.account };
+
+                showSaveSuccess();
             }
+        } catch (e: unknown) {
+            errors.value = ['Неизвестная ошибка'];
         } finally {
             isLoading.value = false;
         }
@@ -81,23 +93,6 @@
             color: 'success',
             icon: 'i-lucide-check-circle',
         });
-    };
-
-    const updateEmail = async () => {
-        const modal = overlay.create(UpdateEmail, {
-            destroyOnClose: true,
-        });
-
-        const instance = modal.open();
-
-        const shouldUpdate = await instance.result;
-        if (shouldUpdate) {
-            showSaveSuccess();
-
-            isLoading.value = true;
-            await doAuth();
-            isLoading.value = false;
-        }
     };
 
     const updatePassword = async () => {
@@ -126,7 +121,7 @@
             <div class="form-table">
                 <div>
                     <div class="title">Роль:</div>
-                    <div class="value">{{ RoleByID(useNuxtApp().$authData.userData!.account.roleID)?.name }}</div>
+                    <div class="value">{{ RoleByID(useNuxtApp().$authData.userData!.account.roleId)?.name }}</div>
                 </div>
                 <div>
                     <div class="title">Email:</div>
@@ -222,15 +217,15 @@
                             :disabled="disabled"
                             :lead-target="PROFILE_PHOTO_ORIGINAL_TARGET"
                             mode="solo"
-                            upload-url="v1/users/photo_file"
+                            upload-url="/v1/tenant/users/profile-photo"
                             accept-types="image/jpeg,image/png,image/webp,image/gif"
                             :model-value="
-                                profileFormState.profilePhotoOriginalFile && profileFormState.profilePhoto100x100File
+                                profileFormState.profilePhotos?.originalFile && profileFormState.profilePhotos?.s100x100File
                                     ? [
                                           {
                                               targets: {
-                                                  [PROFILE_PHOTO_ORIGINAL_TARGET]: profileFormState.profilePhotoOriginalFile,
-                                                  [PROFILE_PHOTO_100X100_TARGET]: profileFormState.profilePhoto100x100File,
+                                                  [PROFILE_PHOTO_ORIGINAL_TARGET]: profileFormState.profilePhotos.originalFile,
+                                                  [PROFILE_PHOTO_100X100_TARGET]: profileFormState.profilePhotos.s100x100File,
                                               },
                                           },
                                       ]

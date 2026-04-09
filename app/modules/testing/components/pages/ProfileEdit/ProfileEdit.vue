@@ -1,13 +1,12 @@
 <script setup lang="ts">
     import type { TestingWidgetProfileForm } from '#components';
+    import type { V1TestingProfile } from '~/api/generated/Api';
     import { showErrors, showSuccess } from '~/core/components/shared/inform/toast';
     import { module } from '~/modules/testing/const';
     import { setModuleBreadcrums } from '~/modules/testing/domain/actions/setModuleBreadcrums';
     import { loadPersonalityTraitsList } from '~/modules/testing/domain/api/personality_trait/fetchPersonalityTraitsList';
-    import { fetchProfile } from '~/modules/testing/domain/api/profile/fetchProfile';
-    import { updateProfile } from '~/modules/testing/domain/api/profile/updateProfile';
     import { checkProfileState } from '~/modules/testing/domain/hooks/checkProfileState';
-    import type { IProfileItem, IProfileItemState } from '~/modules/testing/domain/model/types/profile';
+    import type { IProfileItemState } from '~/modules/testing/domain/model/types/profile';
     import { setMenu } from '~/plugins/app/model/actions/setMenu';
     import { ApiError } from '~/shared/errors/errors';
 
@@ -31,10 +30,12 @@
         },
     ]);
 
+    const api = useApi();
+
     const form = ref<InstanceType<typeof TestingWidgetProfileForm> | null>(null);
 
     const itemState = ref<IProfileItemState | null>(null);
-    const itemObject = ref<IProfileItem | null>(null);
+    const itemObject = ref<V1TestingProfile | null>(null);
 
     const isLoading = ref(false);
 
@@ -44,11 +45,16 @@
 
     const isLoadingAnything = computed(() => isLoading.value || !personalityTraitsList.value);
 
-    const fetchItem = async (): Promise<IProfileItem | null> => {
+    const fetchItem = async (): Promise<V1TestingProfile | null> => {
         isLoading.value = true;
         try {
-            const data = await fetchProfile(props.id);
-            return data;
+            const res = await api.v1.testingPublicServiceGetProfile(props.id);
+
+            if (res.error !== null) {
+                throw res.error;
+            }
+
+            return res.data?.item || null;
         } catch (e) {
             if (e instanceof ApiError) {
                 if (e.code === 404) {
@@ -67,12 +73,14 @@
         return null;
     };
 
-    const updateItemState = (item: IProfileItem) => {
+    const updateItemState = (item: V1TestingProfile) => {
         itemObject.value = item;
 
         const stateValue: IProfileItemState = {
             name: item.name,
-            personalityTraitsMap: item.personalityTraitsMap,
+            personalityTraits: {
+                map: item.personalityTraits?.map || {},
+            },
         };
 
         itemState.value = stateValue;
@@ -107,10 +115,20 @@
 
         isLoading.value = true;
         try {
-            await updateProfile(itemObject.value.id, {
-                ...itemState.value,
-                _version: itemObject.value._version,
+            const res = await api.v1.testingPublicServicePatchProfile(props.id, {
+                payload: {
+                    name: itemState.value.name,
+                    personalityTraits: {
+                        map: itemState.value.personalityTraits.map,
+                    },
+                },
+                version: itemObject.value.version,
+                skipVersionCheck: false,
             });
+
+            if (res.error !== null) {
+                throw res.error;
+            }
 
             const data = await fetchItem();
             if (data) {
@@ -176,7 +194,7 @@
         </div>
         <div class="mt-4">
             <TestingWidgetProfileForm
-                v-if="itemState && itemObject && personalityTraitsList"
+                v-if="itemState && itemObject && personalityTraitsList?.items"
                 ref="form"
                 v-model="itemState"
                 v-model:data-item="itemObject"

@@ -1,7 +1,7 @@
 import { ROLES } from '../model/const/roles';
 import type { IUserRole } from '../model/types/users';
 
-export function getAvailableRolesForCreateUser(currentRoleID: number): IUserRole[] {
+export function getAvailableRolesForCreateUser(currentRoleID: string): IUserRole[] {
     const currentRole = ROLES.find((role) => role.id === currentRoleID);
     if (!currentRole) {
         return [];

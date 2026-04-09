@@ -31,3 +31,4 @@ deployment/builds/*
 
 docker-compose.yml
 readme.txt
+AGENTS.md

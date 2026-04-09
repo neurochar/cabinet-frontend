@@ -1,8 +1,7 @@
-import type { IFile } from '~/shared/types/files';
+import type { V1AccountTenantPhotoFiles } from '~/api/generated/Api';
 
 export interface FormState {
     profileName: string;
     profileSurname: string;
-    profilePhotoOriginalFile: null | IFile;
-    profilePhoto100x100File: null | IFile;
+    profilePhotos?: V1AccountTenantPhotoFiles;
 }

@@ -1,12 +1,11 @@
 <script setup lang="ts">
     import type { CrmWidgetCandidateForm } from '#components';
+    import type { V1Candidate } from '~/api/generated/Api';
     import { showErrors, showSuccess } from '~/core/components/shared/inform/toast';
     import { module } from '~/modules/crm/const';
     import { setModuleBreadcrums } from '~/modules/crm/domain/actions/setModuleBreadcrums';
-    import { fetchCandidate } from '~/modules/crm/domain/api/candidate/fetchCandidate';
-    import { updateCandidate } from '~/modules/crm/domain/api/candidate/updateCandidate';
     import { checkCandidateState } from '~/modules/crm/domain/hooks/checkCandidateState';
-    import type { ICandidateItem, ICandidateItemState } from '~/modules/crm/domain/model/types/candidate';
+    import type { CandidateFromState } from '~/modules/crm/domain/model/types/candidate';
     import { setMenu } from '~/plugins/app/model/actions/setMenu';
     import { ApiError } from '~/shared/errors/errors';
 
@@ -22,7 +21,7 @@
 
     setModuleBreadcrums([
         {
-            name: 'Оборудование',
+            name: 'База кандидатов',
             to: `/candidates`,
         },
         {
@@ -30,10 +29,12 @@
         },
     ]);
 
+    const api = useApi();
+
     const form = ref<InstanceType<typeof CrmWidgetCandidateForm> | null>(null);
 
-    const itemState = ref<ICandidateItemState | null>(null);
-    const itemObject = ref<ICandidateItem | null>(null);
+    const itemState = ref<CandidateFromState | null>(null);
+    const itemObject = ref<V1Candidate | null>(null);
 
     const isLoading = ref(false);
 
@@ -41,11 +42,16 @@
 
     const isLoadingAnything = computed(() => isLoading.value);
 
-    const fetchItem = async (): Promise<ICandidateItem | null> => {
+    const fetchItem = async (): Promise<V1Candidate | null> => {
         isLoading.value = true;
         try {
-            const data = await fetchCandidate(props.id);
-            return data;
+            const res = await api.v1.crmPublicServiceGetCandidate(props.id);
+
+            if (res.error !== null) {
+                throw res.error;
+            }
+
+            return res.data?.item || null;
         } catch (e) {
             if (e instanceof ApiError) {
                 if (e.code === 404) {
@@ -64,17 +70,14 @@
         return null;
     };
 
-    const updateItemState = (item: ICandidateItem) => {
+    const updateItemState = (item: V1Candidate) => {
         itemObject.value = item;
-
-        const stateValue: ICandidateItemState = {
-            candidateName: item.candidateName,
-            candidateSurname: item.candidateSurname,
-            candidateGender: item.candidateGender,
-            candidateBirthday: item.candidateBirthday,
+        itemState.value = {
+            name: item.name,
+            surname: item.surname,
+            birthday: item.birthday,
+            gender: item.gender,
         };
-
-        itemState.value = stateValue;
     };
 
     watch(
@@ -106,10 +109,22 @@
 
         isLoading.value = true;
         try {
-            await updateCandidate(itemObject.value.id, {
-                ...itemState.value,
-                _version: itemObject.value._version,
+            const res = await api.v1.crmPublicServicePatchCandidate(itemObject.value.id, {
+                payload: {
+                    gender: itemState.value.gender,
+                    name: itemState.value.name,
+                    surname: itemState.value.surname,
+                    birthday: {
+                        date: itemState.value.birthday,
+                    },
+                },
+                version: itemObject.value.version,
+                skipVersionCheck: false,
             });
+
+            if (res.error !== null) {
+                throw res.error;
+            }
 
             const data = await fetchItem();
             if (data) {

@@ -1,10 +1,10 @@
 <script setup lang="ts">
     import type { InputMenuItem } from '@nuxt/ui';
-    import { fetchCandidate } from '~/modules/crm/domain/api/candidate/fetchCandidate';
-    import { fetchCandidateList } from '~/modules/crm/domain/api/candidate/fetchCandidateList';
-    import type { ICandidateItem, ICandidateListItem } from '~/modules/crm/domain/model/types/candidate';
+    import type { V1Candidate, V1ListCandidate } from '~/api/generated/Api';
     import { ApiError } from '~/shared/errors/errors';
     import { declOfNum } from '~/shared/helpers/functions';
+
+    const api = useApi();
 
     const vModel = defineModel<string | null>({ default: null });
 
@@ -40,9 +40,9 @@
 
     let listController: AbortController | null = null;
 
-    const itemToInputMenuItem = (item: ICandidateItem | ICandidateListItem): InputMenuItem => {
+    const itemToInputMenuItem = (item: V1Candidate | V1ListCandidate): InputMenuItem => {
         return {
-            label: `${item.candidateName} ${item.candidateSurname}`,
+            label: `${item.name} ${item.surname}`,
             value: item.id,
         };
     };
@@ -57,16 +57,22 @@
 
             listController = new AbortController();
 
-            const data = await fetchCandidateList(
+            const res = await api.v1.crmPublicServiceListCandidates(
                 {
-                    search: searchTerm.value,
-                    limit: 100,
+                    searchQuery: searchTerm.value,
+                    limit: String(100),
                 },
-                listController,
+                {
+                    signal: listController.signal,
+                },
             );
 
-            if (data.items) {
-                items.value = data.items.map(itemToInputMenuItem);
+            if (res.error !== null) {
+                throw res.error;
+            }
+
+            if (res.data?.items) {
+                items.value = res.data.items.map(itemToInputMenuItem);
             }
         } catch (e: unknown) {
             console.error(e);
@@ -103,9 +109,17 @@
 
             itemController = new AbortController();
 
-            const data = await fetchCandidate(value, itemController);
+            const res = await api.v1.crmPublicServiceGetCandidate(value, {
+                signal: itemController.signal,
+            });
 
-            menuValue.value = itemToInputMenuItem(data);
+            if (res.error !== null) {
+                throw res.error;
+            }
+
+            if (res.data?.item) {
+                menuValue.value = itemToInputMenuItem(res.data.item);
+            }
         } catch (e: unknown) {
             console.error(e);
             if (e instanceof ApiError) {

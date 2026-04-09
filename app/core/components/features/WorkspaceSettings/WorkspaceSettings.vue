@@ -1,16 +1,22 @@
 <script setup lang="ts">
+    import { RoleByID } from '~/core/domain/model/const/roles';
     import { doAuth } from '~/plugins/auth/model';
     import { ApiError } from '~/shared/errors/errors';
     import { showSuccess } from '../../shared/inform/toast';
-    import { updateTenantSettings } from './api/updateTenantSettings';
+
+    const api = useApi();
 
     const isLoading = ref(false);
 
     const errors = ref<string[]>([]);
 
+    const userRole = RoleByID(useNuxtApp().$authData.userData?.account.roleId || '0');
+
+    const readonly = computed(() => (userRole?.rank || Infinity) > 1 || true);
+
     const formState = ref({ ...useNuxtApp().$authData.userData!.tenant });
 
-    const disabled = ref(false);
+    const disabled = computed(() => readonly.value);
 
     const save = async () => {
         if (isLoading.value) return;
@@ -25,11 +31,17 @@
 
         isLoading.value = true;
         try {
-            await updateTenantSettings({
-                _version: formState.value._version,
-                _skipVersionCheck: true,
-                name: formState.value.name,
+            const res = await api.v1.tenantPublicServicePatchTenant(useNuxtApp().$authData.userData!.tenant.id, {
+                payload: {
+                    name: formState.value.name,
+                },
+                skipVersionCheck: true,
+                version: '0',
             });
+
+            if (res.error !== null) {
+                throw res.error;
+            }
 
             await doAuth();
             formState.value = { ...useNuxtApp().$authData.userData!.tenant };
@@ -51,7 +63,10 @@
     <div>
         <div class="form_title">
             <div class="title">Рабочее пространство</div>
-            <div class="buttons">
+            <div
+                v-if="!readonly"
+                class="buttons"
+            >
                 <UButton
                     :disabled="isLoading"
                     :loading="isLoading"
@@ -97,6 +112,10 @@
                             :disabled="disabled"
                         />
                     </div>
+                </div>
+                <div>
+                    <div class="title">Тариф:</div>
+                    <div class="value">Демо-версия</div>
                 </div>
             </div>
         </div>

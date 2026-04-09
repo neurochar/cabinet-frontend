@@ -1,9 +1,7 @@
 <script setup lang="ts">
-    import { fetchUser } from '~/core/domain/api/fetchUser';
-    import { patchAccount } from '~/core/domain/api/patchAccount';
+    import type { V1AccountTenant, V1PatchAccountRequestPayload } from '~/api/generated/Api';
     import { PROFILE_PHOTO_100X100_TARGET, PROFILE_PHOTO_ORIGINAL_TARGET } from '~/core/domain/model/const/conts';
     import { RoleByID } from '~/core/domain/model/const/roles';
-    import type { IUserAccount } from '~/core/domain/model/types/users';
     import { setAppBreadcrumbs } from '~/plugins/app/model/actions/setAppBreadcrumbs';
     import { setMenu } from '~/plugins/app/model/actions/setMenu';
     import { ApiError } from '~/shared/errors/errors';
@@ -35,25 +33,26 @@
         },
     ]);
 
-    const account = ref<IUserAccount | null>(null);
+    const api = useApi();
+
+    const account = ref<V1AccountTenant | null>(null);
 
     const profileFormState = ref<FormState>({
         profileName: '',
         profileSurname: '',
-        profilePhotoOriginalFile: null,
-        profilePhoto100x100File: null,
     });
 
     const onUpdateImage = (files: UploadedFile[]) => {
         if (files.length === 0) {
-            profileFormState.value.profilePhoto100x100File = null;
-            profileFormState.value.profilePhotoOriginalFile = null;
+            profileFormState.value.profilePhotos = undefined;
             return;
         }
 
         const file = files[0]!;
-        profileFormState.value.profilePhoto100x100File = file.targets[PROFILE_PHOTO_100X100_TARGET]!;
-        profileFormState.value.profilePhotoOriginalFile = file.targets[PROFILE_PHOTO_ORIGINAL_TARGET]!;
+        profileFormState.value.profilePhotos = {
+            originalFile: file.targets[PROFILE_PHOTO_ORIGINAL_TARGET]!,
+            s100x100File: file.targets[PROFILE_PHOTO_100X100_TARGET]!,
+        };
     };
 
     const isLoading = ref(false);
@@ -63,8 +62,8 @@
     const errors = ref<string[]>([]);
 
     const onlyRead = computed(() => {
-        const accountRole = account.value ? RoleByID(account.value.roleID) : undefined;
-        const authorRole = RoleByID(useNuxtApp().$authData.userData!.account.roleID);
+        const accountRole = account.value ? RoleByID(account.value.roleId) : undefined;
+        const authorRole = RoleByID(useNuxtApp().$authData.userData!.account.roleId);
         if (!accountRole || !authorRole) {
             return false;
         }
@@ -72,18 +71,23 @@
         return accountRole.rank <= authorRole.rank;
     });
 
-    const fetchItemAndSetState = async (): Promise<IUserAccount | null> => {
+    const fetchItemAndSetState = async (): Promise<V1AccountTenant | null> => {
         isLoading.value = true;
         try {
-            account.value = await fetchUser(props.id);
+            const res = await api.v1.usersTenantPublicServiceGetAccount(props.id);
+
+            if (res.error !== null) {
+                throw res.error;
+            }
+
+            account.value = res.data!.item!;
 
             if (account.value) {
                 profileFormState.value = {
                     ...profileFormState.value,
                     profileName: account.value.profileName,
                     profileSurname: account.value.profileSurname,
-                    profilePhotoOriginalFile: account.value.profilePhotoOriginalFile,
-                    profilePhoto100x100File: account.value.profilePhoto100x100File,
+                    profilePhotos: account.value.profilePhotos,
                 };
             }
 
@@ -137,16 +141,29 @@
 
         isLoading.value = true;
         try {
-            await patchAccount(account.value.id, {
-                _version: account.value._version,
-                _skipVersionCheck: true,
+            const payload: V1PatchAccountRequestPayload = {
                 profileName: profileFormState.value.profileName,
                 profileSurname: profileFormState.value.profileSurname,
-                profilePhotos: {
-                    photoOriginalFileID: profileFormState.value.profilePhotoOriginalFile ? profileFormState.value.profilePhotoOriginalFile.id : null,
-                    photo100x100FileID: profileFormState.value.profilePhoto100x100File ? profileFormState.value.profilePhoto100x100File.id : null,
-                },
+            };
+
+            if (!profileFormState.value.profilePhotos) {
+                payload.profilePhotosClear = true;
+            } else {
+                payload.profilePhotos = {
+                    originalFileId: profileFormState.value.profilePhotos.originalFile!.id!,
+                    s100x100FileId: profileFormState.value.profilePhotos.s100x100File!.id!,
+                };
+            }
+
+            const res = await api.v1.usersTenantPublicServicePatchAccount(account.value.id, {
+                payload: payload,
+                skipVersionCheck: true,
+                version: '0',
             });
+
+            if (res.error !== null) {
+                throw res.error;
+            }
 
             await fetchItemAndSetState();
 
@@ -161,29 +178,6 @@
     };
 
     const overlay = useOverlay();
-
-    /*
-    const updateEmail = async () => {
-        const modal = overlay.create(UpdateEmail, {
-            destroyOnClose: true,
-            props: {
-                user: profileFormState.value,
-            },
-        });
-
-        const instance = modal.open();
-
-        const shouldUpdate = await instance.result;
-        if (shouldUpdate) {
-            showSuccess();
-
-            const data = await fetchItemState();
-            if (data) {
-                profileFormState.value.account = data.account;
-            }
-        }
-    };
-    */
 
     const updatePassword = async () => {
         if (!account.value) return;
@@ -250,11 +244,17 @@
         if (shouldDo) {
             isLoading.value = true;
             try {
-                await patchAccount(account.value?.id || '', {
-                    _version: account.value?._version || 0,
-                    _skipVersionCheck: true,
-                    isBlocked: isBlocked,
+                const res = await api.v1.usersTenantPublicServicePatchAccount(account.value?.id || '', {
+                    payload: {
+                        isBlocked: isBlocked,
+                    },
+                    skipVersionCheck: true,
+                    version: '0',
                 });
+
+                if (res.error !== null) {
+                    throw res.error;
+                }
 
                 showSuccess();
 
@@ -287,7 +287,7 @@
                     <div>
                         <div class="title">Роль:</div>
                         <div class="value">
-                            <div>{{ RoleByID(account.roleID)?.name }}</div>
+                            <div>{{ RoleByID(account.roleId)?.name }}</div>
                             <div
                                 v-if="!onlyRead"
                                 class="mt-2"
@@ -451,9 +451,9 @@
                         </div>
                         <div class="value">
                             <template v-if="onlyRead">
-                                <div v-if="profileFormState.profilePhoto100x100File">
+                                <div v-if="profileFormState.profilePhotos">
                                     <img
-                                        :src="profileFormState.profilePhoto100x100File.url"
+                                        :src="profileFormState.profilePhotos.s100x100File?.url"
                                         alt=""
                                     />
                                 </div>
@@ -463,15 +463,15 @@
                                     :disabled="isLoading"
                                     :lead-target="PROFILE_PHOTO_ORIGINAL_TARGET"
                                     mode="solo"
-                                    upload-url="v1/users/photo_file"
+                                    upload-url="/v1/tenant/users/profile-photo"
                                     accept-types="image/jpeg,image/png,image/webp,image/gif"
                                     :model-value="
-                                        profileFormState.profilePhotoOriginalFile && profileFormState.profilePhoto100x100File
+                                        profileFormState.profilePhotos?.originalFile && profileFormState.profilePhotos?.s100x100File
                                             ? [
                                                   {
                                                       targets: {
-                                                          [PROFILE_PHOTO_ORIGINAL_TARGET]: profileFormState.profilePhotoOriginalFile,
-                                                          [PROFILE_PHOTO_100X100_TARGET]: profileFormState.profilePhoto100x100File,
+                                                          [PROFILE_PHOTO_ORIGINAL_TARGET]: profileFormState.profilePhotos.originalFile,
+                                                          [PROFILE_PHOTO_100X100_TARGET]: profileFormState.profilePhotos.s100x100File,
                                                       },
                                                   },
                                               ]

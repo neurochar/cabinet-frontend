@@ -1,50 +1,11 @@
-export enum IProfileItemPersonalityTraitMapPriority {
-    'none' = 0,
-    'low' = 1,
-    'middle' = 2,
-    'high' = 3,
-}
+import { V1PersonalityTraitPriority, type V1TestingProfile } from '~/api/generated/Api';
 
-interface IProfileItemPersonalityTraitMapPriorityConfigItem {
-    label: string;
-}
-
-export const IProfileItemPersonalityTraitMapPriorityConfig: Record<IProfileItemPersonalityTraitMapPriority, IProfileItemPersonalityTraitMapPriorityConfigItem> =
-    {
-        [IProfileItemPersonalityTraitMapPriority.none]: { label: 'Не имеет значения' },
-        [IProfileItemPersonalityTraitMapPriority.low]: { label: 'Низкий' },
-        [IProfileItemPersonalityTraitMapPriority.middle]: { label: 'Средний' },
-        [IProfileItemPersonalityTraitMapPriority.high]: { label: 'Высокий' },
-    };
-
-export const priorityToConfig = (priority: number): IProfileItemPersonalityTraitMapPriorityConfigItem | undefined => {
-    return IProfileItemPersonalityTraitMapPriorityConfig[Number(priority) as IProfileItemPersonalityTraitMapPriority];
+export const IPersonalityTraitPriorityConfig: Record<V1PersonalityTraitPriority, { label: string; sort: number }> = {
+    [V1PersonalityTraitPriority.PRESONALITY_TRAIT_PRIORITY_NONE]: { label: 'Не использовать', sort: 0 },
+    [V1PersonalityTraitPriority.PRESONALITY_TRAIT_PRIORITY_LOW]: { label: 'Низкий', sort: 1 },
+    [V1PersonalityTraitPriority.PRESONALITY_TRAIT_PRIORITY_MEDIUM]: { label: 'Средний', sort: 2 },
+    [V1PersonalityTraitPriority.PRESONALITY_TRAIT_PRIORITY_HIGH]: { label: 'Высокий', sort: 3 },
 };
 
-export interface IProfileItem {
-    _version?: number;
-
-    id: string;
-    tenantID: string;
-    name: string;
-    personalityTraitsMap: Record<
-        string,
-        {
-            priority: number;
-            target: number;
-        }
-    >;
-}
-
-export type IProfileListItem = Omit<IProfileItem, 'personalityTraitsMap'>;
-
-export interface IProfileItemState {
-    name: string;
-    personalityTraitsMap: Record<
-        string,
-        {
-            priority: number;
-            target: number;
-        }
-    >;
-}
+export type IProfileItemState = Omit<Pick<V1TestingProfile, 'name' | 'personalityTraits'>, 'personalityTraits'> &
+    Required<Pick<V1TestingProfile, 'personalityTraits'>>;

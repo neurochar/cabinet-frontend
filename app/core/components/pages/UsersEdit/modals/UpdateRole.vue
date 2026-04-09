@@ -1,21 +1,22 @@
 <script setup lang="ts">
-    import { patchAccount } from '~/core/domain/api/patchAccount';
+    import type { V1AccountTenant } from '~/api/generated/Api';
     import { getAvailableRolesForCreateUser } from '~/core/domain/hooks/getAvailableRolesForCreateUser';
-    import type { IUserAccount } from '~/core/domain/model/types/users';
     import { ApiError } from '~/shared/errors/errors';
 
     const emit = defineEmits<{ close: [boolean] }>();
 
     const props = defineProps<{
-        account: IUserAccount;
+        account: V1AccountTenant;
     }>();
+
+    const api = useApi();
 
     const errors = ref<string[]>([]);
 
     const isLoading = ref(false);
 
     const rolesList = computed(() => {
-        return getAvailableRolesForCreateUser(useNuxtApp().$authData.userData!.account.roleID);
+        return getAvailableRolesForCreateUser(useNuxtApp().$authData.userData!.account.roleId);
     });
 
     const rolesListOptions = computed(() => {
@@ -29,8 +30,8 @@
             : [];
     });
 
-    const formState = ref<{ roleID: number }>({
-        roleID: props.account.roleID || 0,
+    const formState = ref<{ roleID: string }>({
+        roleID: props.account.roleId,
     });
 
     const save = async () => {
@@ -40,11 +41,17 @@
 
         isLoading.value = true;
         try {
-            await patchAccount(props.account.id, {
-                _version: props.account._version,
-                _skipVersionCheck: true,
-                roleID: formState.value.roleID,
+            const res = await api.v1.usersTenantPublicServicePatchAccount(props.account.id, {
+                payload: {
+                    roleId: formState.value.roleID,
+                },
+                skipVersionCheck: true,
+                version: '0',
             });
+
+            if (res.error !== null) {
+                throw res.error;
+            }
 
             emit('close', true);
         } catch (e) {

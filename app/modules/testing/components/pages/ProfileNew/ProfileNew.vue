@@ -4,7 +4,6 @@
     import { module } from '~/modules/testing/const';
     import { setModuleBreadcrums } from '~/modules/testing/domain/actions/setModuleBreadcrums';
     import { loadPersonalityTraitsList } from '~/modules/testing/domain/api/personality_trait/fetchPersonalityTraitsList';
-    import { createProfile } from '~/modules/testing/domain/api/profile/createProfile';
     import { checkProfileState } from '~/modules/testing/domain/hooks/checkProfileState';
     import type { IProfileItemState } from '~/modules/testing/domain/model/types/profile';
     import { setMenu } from '~/plugins/app/model/actions/setMenu';
@@ -26,11 +25,15 @@
         },
     ]);
 
+    const api = useApi();
+
     const form = ref<InstanceType<typeof TestingWidgetProfileForm> | null>(null);
 
     const initState: IProfileItemState = {
         name: '',
-        personalityTraitsMap: {},
+        personalityTraits: {
+            map: {},
+        },
     };
 
     const itemObject = ref<null>(null);
@@ -58,11 +61,22 @@
 
         isLoading.value = true;
         try {
-            const data = await createProfile(itemState.value);
+            const res = await api.v1.testingPublicServiceCreateProfile({
+                payload: {
+                    name: itemState.value.name,
+                    personalityTraits: {
+                        map: itemState.value.personalityTraits.map,
+                    },
+                },
+            });
+
+            if (res.error !== null) {
+                throw res.error;
+            }
 
             showSuccess();
 
-            await navigateTo(`/${module.urlName}/profiles/${data.id}`);
+            await navigateTo(`/${module.urlName}/profiles/${res.data?.item?.id}`);
         } catch (e) {
             if (e instanceof ApiError) {
                 errors.value = e.formHints();
@@ -107,7 +121,7 @@
         </div>
         <div class="mt-4">
             <TestingWidgetProfileForm
-                v-if="itemState && personalityTraitsList"
+                v-if="itemState && personalityTraitsList?.items"
                 ref="form"
                 v-model="itemState"
                 v-model:data-item="itemObject"

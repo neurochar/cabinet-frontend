@@ -28,35 +28,47 @@ export default defineNuxtPlugin({
                 }
             },
 
-            async onResponseError({ response, error, options }) {
+            async onResponseError({ response, options }) {
                 if (response.status === 401 && (options as any)._meta.refresh_tried === undefined) {
                     const accessToken = localStorage.getItem(AUTH_ACCESS_TOKEN_KEY);
                     if (!accessToken) {
-                        throw error;
+                        console.error('no access token');
+                        doLogout();
+                        return;
                     }
 
-                    try {
-                        await singleflight.do('refresh', async () => {
+                    const refreshRes = await singleflight.do<{ error?: unknown }>('refresh', async () => {
+                        try {
                             await doRefresh();
-                        });
-                    } catch (e: unknown) {
-                        if (e instanceof ApiError) {
-                            if (e.code === 401) {
-                                doLogout();
+                            return {};
+                        } catch (e: unknown) {
+                            if (e instanceof ApiError) {
+                                if (e.code === 401) {
+                                    doLogout();
+                                }
                             }
+                            return { error: e };
                         }
+                    });
 
-                        throw error;
-                    } finally {
-                        (options as any)._meta.refresh_tried = true;
+                    (options as any)._meta.refresh_tried = true;
+
+                    if (refreshRes.value.error) {
+                        console.error(refreshRes.value.error);
                     }
                 }
             },
         });
 
+        const apiFetchWithoutAuth = $fetch.create({
+            baseURL: nuxtApp.$config.public.apiBase,
+            headers: GetDefaultHeaders(undefined),
+        });
+
         return {
             provide: {
                 apiFetch,
+                apiFetchWithoutAuth,
             },
         };
     },

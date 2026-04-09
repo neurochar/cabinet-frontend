@@ -1,9 +1,8 @@
-import type { ITenant } from '~/core/domain/model/types/tenant';
-import type { IUserAccount } from '~/core/domain/model/types/users';
+import type { V1AccountTenant, V1Tenant } from '~/api/generated/Api';
 
 export interface IAuthUserData {
-    account: IUserAccount;
-    tenant: ITenant;
+    account: V1AccountTenant;
+    tenant: V1Tenant;
 }
 
 export interface IAuthTokens {

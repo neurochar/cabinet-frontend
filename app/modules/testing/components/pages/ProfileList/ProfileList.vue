@@ -1,12 +1,10 @@
 <script setup lang="ts">
     import type { DropdownMenuItem, TableColumn } from '@nuxt/ui';
+    import type { V1TestingListProfile } from '~/api/generated/Api';
     import Confirm from '~/core/components/shared/Confirm/modals/Confirm.vue';
     import { showErrors, showSuccess } from '~/core/components/shared/inform/toast';
     import { module } from '~/modules/testing/const';
     import { setModuleBreadcrums } from '~/modules/testing/domain/actions/setModuleBreadcrums';
-    import { deleteProfile } from '~/modules/testing/domain/api/profile/deleteProfile';
-    import { fetchProfileList } from '~/modules/testing/domain/api/profile/fetchProfileList';
-    import type { IProfileListItem } from '~/modules/testing/domain/model/types/profile';
     import { setMenu } from '~/plugins/app/model/actions/setMenu';
     import { ApiError } from '~/shared/errors/errors';
 
@@ -22,9 +20,31 @@
         },
     ]);
 
+    const api = useApi();
+
+    const route = useRoute();
+
+    let routePage = Number(route.query.page);
+    if (!routePage || isNaN(routePage)) {
+        routePage = 1;
+    }
+
+    const page = ref(routePage);
+
     const isLoading = ref(true);
 
-    const list = ref<IProfileListItem[]>([]);
+    const list = ref<V1TestingListProfile[]>([]);
+
+    const defaultLimit = 20;
+
+    let routeLimit = Number(route.query.limit);
+    if (!routeLimit || isNaN(routeLimit)) {
+        routeLimit = defaultLimit;
+    }
+
+    const limit = ref(routeLimit);
+
+    const total = ref(0);
 
     const listPrepared = computed(() => {
         return list.value;
@@ -34,9 +54,29 @@
         isLoading.value = true;
 
         try {
-            const data = await fetchProfileList();
-            if (data.items) {
-                list.value = data.items;
+            const res = await api.v1.testingPublicServiceListProfiles({
+                limit: String(limit.value < 1 ? 1 : limit.value),
+                offset: String((page.value - 1) * limit.value),
+            });
+
+            if (res.error !== null) {
+                throw res.error;
+            }
+
+            if (res.data && res.data.items) {
+                list.value = res.data.items;
+                total.value = res.data.total;
+
+                await navigateTo(
+                    {
+                        query: {
+                            ...route.query,
+                            page: page.value > 1 ? page.value : undefined,
+                            limit: limit.value !== defaultLimit ? limit.value.toString() : undefined,
+                        },
+                    },
+                    { replace: true },
+                );
             }
         } catch (e: unknown) {
             if (e instanceof ApiError) {
@@ -46,6 +86,19 @@
             isLoading.value = false;
         }
     };
+
+    const onPageUpdate = (p: number) => {
+        if (isLoading.value) return;
+        page.value = p;
+        fetchData();
+    };
+
+    watch(limit, () => {
+        page.value = 1;
+        setTimeout(() => {
+            fetchData();
+        }, 100);
+    });
 
     const removeItem = async (id: string): Promise<boolean> => {
         const modal = useOverlay().create(Confirm, {
@@ -60,7 +113,10 @@
         const shouldDelete = await instance.result;
         if (shouldDelete) {
             try {
-                await deleteProfile(id);
+                const res = await api.v1.testingPublicServiceDeleteProfile(id);
+                if (res.error !== null) {
+                    throw res.error;
+                }
 
                 showSuccess('Объект удален');
 
@@ -75,7 +131,7 @@
         return false;
     };
 
-    const columns: TableColumn<IProfileListItem>[] = [
+    const columns: TableColumn<V1TestingListProfile>[] = [
         {
             id: 'id',
             header: 'ID',
@@ -89,7 +145,7 @@
         },
     ];
 
-    function getDropdownActions(item: IProfileListItem): DropdownMenuItem[][] {
+    function getDropdownActions(item: V1TestingListProfile): DropdownMenuItem[][] {
         return [
             [
                 {
@@ -132,7 +188,9 @@
             :ui="{ td: '__whitespace-normal' }"
         >
             <template #id-cell="{ row }">
-                {{ row.original.id }}
+                <div style="font-size: 10px; text-decoration: underline">
+                    <NuxtLink :to="`/${module.urlName}/profiles/${row.original.id}`">{{ row.original.id }}</NuxtLink>
+                </div>
             </template>
             <template #name-cell="{ row }">
                 <b>{{ row.original.name }}</b>
@@ -150,6 +208,17 @@
                 </div>
             </template>
         </UTable>
+        <SharedPaginator
+            v-model="limit"
+            :disabled="isLoading"
+        >
+            <UPagination
+                :page="page"
+                :items-per-page="Number(limit)"
+                :total="Number(total)"
+                @update:page="onPageUpdate"
+            />
+        </SharedPaginator>
     </div>
 </template>
 

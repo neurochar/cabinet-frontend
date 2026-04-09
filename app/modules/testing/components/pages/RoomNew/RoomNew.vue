@@ -3,7 +3,6 @@
     import { showSuccess } from '~/core/components/shared/inform/toast';
     import { module } from '~/modules/testing/const';
     import { setModuleBreadcrums } from '~/modules/testing/domain/actions/setModuleBreadcrums';
-    import { createRoom } from '~/modules/testing/domain/api/room/createRoom';
     import { checkRoomState } from '~/modules/testing/domain/hooks/checkRoomState';
     import type { IRoomItemState } from '~/modules/testing/domain/model/types/room';
     import { setMenu } from '~/plugins/app/model/actions/setMenu';
@@ -24,6 +23,8 @@
             name: 'Создание объекта',
         },
     ]);
+
+    const api = useApi();
 
     const form = ref<InstanceType<typeof TestingWidgetRoomForm> | null>(null);
 
@@ -55,11 +56,20 @@
 
         isLoading.value = true;
         try {
-            const data = await createRoom(itemState.value);
+            const res = await api.v1.testingPublicServiceCreateRoom({
+                payload: {
+                    candidateId: itemState.value.candidateID!,
+                    profileId: itemState.value.profileID!,
+                },
+            });
+
+            if (res.error !== null) {
+                throw res.error;
+            }
 
             showSuccess();
 
-            await navigateTo(`/${module.urlName}/rooms/${data.id}`);
+            await navigateTo(`/${module.urlName}/rooms/${res.data?.item?.id}`);
         } catch (e) {
             if (e instanceof ApiError) {
                 errors.value = e.formHints();
