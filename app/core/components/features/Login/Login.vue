@@ -151,10 +151,10 @@
     }
 
     .logo {
-        background: url('@/assets/images/logo_black.svg') no-repeat center top;
+        background: url('@/assets/images/n-full.svg') no-repeat center top;
         background-size: 100% auto;
         max-width: 360px;
-        padding-top: 12%;
+        padding-top: 17%;
         margin: 0 auto 30px auto;
     }
 
