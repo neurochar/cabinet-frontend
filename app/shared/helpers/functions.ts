@@ -147,13 +147,13 @@ export function parseDate(dateStr: string): Date {
 }
 
 export function calcAge(birthDate: Date, compareDate: Date = new Date()): number {
-    const birthYear = birthDate.getUTCFullYear();
-    const birthMonth = birthDate.getUTCMonth();
-    const birthDay = birthDate.getUTCDate();
+    const birthYear = birthDate.getFullYear();
+    const birthMonth = birthDate.getMonth();
+    const birthDay = birthDate.getDate();
 
-    const currentYear = compareDate.getUTCFullYear();
-    const currentMonth = compareDate.getUTCMonth();
-    const currentDay = compareDate.getUTCDate();
+    const currentYear = compareDate.getFullYear();
+    const currentMonth = compareDate.getMonth();
+    const currentDay = compareDate.getDate();
 
     let age = currentYear - birthYear;
 
