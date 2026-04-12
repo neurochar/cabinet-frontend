@@ -142,7 +142,6 @@
                 />
             </div>
         </div>
-        !{{ dataModel.birthday }}
         <div>
             <div class="title">
                 Дата рождения:
