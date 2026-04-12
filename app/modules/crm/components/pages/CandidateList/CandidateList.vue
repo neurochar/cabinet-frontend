@@ -52,6 +52,9 @@
         return list.value;
     });
 
+    const searchInput = ref<any>(null);
+    const queryFilter = ref(String(route.query.query || ''));
+
     const fetchData = async () => {
         isLoading.value = true;
 
@@ -59,6 +62,7 @@
             const res = await api.v1.crmPublicServiceListCandidates({
                 limit: String(limit.value < 1 ? 1 : limit.value),
                 offset: String((page.value - 1) * limit.value),
+                searchQuery: queryFilter.value || undefined,
             });
 
             if (res.error !== null) {
@@ -75,6 +79,7 @@
                             ...route.query,
                             page: page.value > 1 ? page.value : undefined,
                             limit: limit.value !== defaultLimit ? limit.value.toString() : undefined,
+                            query: queryFilter.value.length ? queryFilter.value : undefined,
                         },
                     },
                     { replace: true },
@@ -100,6 +105,17 @@
         setTimeout(() => {
             fetchData();
         }, 100);
+    });
+
+    const debouncedQueryFilterFetch = useDebounceFn(async () => {
+        page.value = 1;
+        await fetchData();
+        await nextTick();
+        searchInput.value?.inputRef.focus();
+    }, 500);
+
+    watch(queryFilter, async () => {
+        debouncedQueryFilterFetch();
     });
 
     const removeItem = async (id: string): Promise<boolean> => {
@@ -186,12 +202,41 @@
         <div class="flex justify-end">
             <UButton :to="`/${module.urlName}/candidates/new`">Создать новый объект</UButton>
         </div>
+        <div
+            class="mt-6 flex gap-4 items-center flex-wrap p-2"
+            style="background-color: var(--ui-color-neutral-100); padding: 10px 15px; border-radius: 6px"
+        >
+            <div>
+                <UInput
+                    ref="searchInput"
+                    v-model="queryFilter"
+                    :disabled="isLoading"
+                    placeholder="Поиск..."
+                    color="neutral"
+                >
+                    <template
+                        v-if="queryFilter?.length"
+                        #trailing
+                    >
+                        <UButton
+                            color="neutral"
+                            variant="link"
+                            size="sm"
+                            icon="i-lucide-circle-x"
+                            aria-label="Clear input"
+                            @click="queryFilter = ''"
+                        />
+                    </template>
+                </UInput>
+            </div>
+        </div>
         <UTable
             v-model:column-pinning="columnPinning"
             :data="listPrepared"
             :columns="columns"
             :loading="isLoading"
             :ui="{ td: '__whitespace-normal' }"
+            class="mt-6"
         >
             <template #id-cell="{ row }">
                 <div style="font-size: 10px; text-decoration: underline">

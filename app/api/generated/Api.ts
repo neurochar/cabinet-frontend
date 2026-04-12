@@ -37,6 +37,14 @@ export enum V1PersonalityTraitPriority {
   PRESONALITY_TRAIT_PRIORITY_HIGH = "PRESONALITY_TRAIT_PRIORITY_HIGH",
 }
 
+/** @default "LIST_ROOM_SORT_UNSPECIFIED" */
+export enum V1ListRoomsSort {
+  LIST_ROOM_SORT_UNSPECIFIED = "LIST_ROOM_SORT_UNSPECIFIED",
+  LIST_ROOM_SORT_CREATED_AT = "LIST_ROOM_SORT_CREATED_AT",
+  LIST_ROOM_SORT_FINISHED_AT = "LIST_ROOM_SORT_FINISHED_AT",
+  LIST_ROOM_SORT_RESULT_INDEX = "LIST_ROOM_SORT_RESULT_INDEX",
+}
+
 /** @default "GENDER_UNSPECIFIED" */
 export enum V1Gender {
   GENDER_UNSPECIFIED = "GENDER_UNSPECIFIED",
@@ -661,9 +669,14 @@ export interface V1TestingListProfile {
 
 export interface V1TestingListRoom {
   candidate?: V1TestingRoomCandidate;
+  /** @format date-time */
+  createdAt: string;
+  /** @format date-time */
+  finishedAt?: string;
   id: string;
   profile?: V1TestingRoomProfile;
-  result?: V1TestingRoomResult;
+  /** @format int32 */
+  resultIndex?: number;
   status: V1RoomStatus;
   tenantId: string;
   /** @format int64 */
@@ -682,10 +695,16 @@ export interface V1TestingProfile {
 
 export interface V1TestingRoom {
   candidate?: V1TestingRoomCandidate;
+  /** @format date-time */
+  createdAt: string;
+  /** @format date-time */
+  finishedAt?: string;
   id: string;
   personalityTraits: V1ProfilePersonalityTraitsMap;
   profile?: V1TestingRoomProfile;
   result?: V1TestingRoomResult;
+  /** @format int32 */
+  resultIndex?: number;
   status: V1RoomStatus;
   tenantId: string;
   /** @format int64 */
@@ -1814,6 +1833,14 @@ export class Api<
         limit?: string;
         /** @format uint64 */
         offset?: string;
+        /** @default "LIST_ROOM_SORT_UNSPECIFIED" */
+        sort?:
+          | "LIST_ROOM_SORT_UNSPECIFIED"
+          | "LIST_ROOM_SORT_CREATED_AT"
+          | "LIST_ROOM_SORT_FINISHED_AT"
+          | "LIST_ROOM_SORT_RESULT_INDEX";
+        filterCandidateId?: string;
+        filterProfileId?: string;
       },
       params: RequestParams = {},
     ) =>

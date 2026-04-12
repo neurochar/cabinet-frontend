@@ -1,6 +1,6 @@
 <script setup lang="ts">
     import type { DropdownMenuItem, TableColumn } from '@nuxt/ui';
-    import { V1RoomStatus, type V1TestingListRoom } from '~/api/generated/Api';
+    import { V1ListRoomsSort, V1RoomStatus, type V1TestingListRoom } from '~/api/generated/Api';
     import Confirm from '~/core/components/shared/Confirm/modals/Confirm.vue';
     import { showErrors, showSuccess } from '~/core/components/shared/inform/toast';
     import { module } from '~/modules/testing/const';
@@ -50,6 +50,15 @@
         return list.value;
     });
 
+    const filterProfileID = ref<string | null>(route.query.filterProfileID ? String(route.query.filterProfileID) : null);
+
+    const filterCandidateID = ref<string | null>(route.query.filterCandidateID ? String(route.query.filterCandidateID) : null);
+
+    const sortValue = ref<V1ListRoomsSort>(V1ListRoomsSort.LIST_ROOM_SORT_UNSPECIFIED);
+    if (Object.values(V1ListRoomsSort).includes(route.query.sort as V1ListRoomsSort)) {
+        sortValue.value = route.query.sort as V1ListRoomsSort;
+    }
+
     const fetchData = async () => {
         isLoading.value = true;
 
@@ -57,6 +66,9 @@
             const res = await api.v1.testingPublicServiceListRooms({
                 limit: String(limit.value < 1 ? 1 : limit.value),
                 offset: String((page.value - 1) * limit.value),
+                filterProfileId: filterProfileID.value || undefined,
+                filterCandidateId: filterCandidateID.value || undefined,
+                sort: sortValue.value !== V1ListRoomsSort.LIST_ROOM_SORT_UNSPECIFIED ? sortValue.value : undefined,
             });
 
             if (res.error !== null) {
@@ -73,6 +85,9 @@
                             ...route.query,
                             page: page.value > 1 ? page.value : undefined,
                             limit: limit.value !== defaultLimit ? limit.value.toString() : undefined,
+                            filterProfileID: filterProfileID.value || undefined,
+                            filterCandidateID: filterCandidateID.value || undefined,
+                            sort: sortValue.value !== V1ListRoomsSort.LIST_ROOM_SORT_UNSPECIFIED ? sortValue.value : undefined,
                         },
                     },
                     { replace: true },
@@ -94,6 +109,27 @@
     };
 
     watch(limit, () => {
+        page.value = 1;
+        setTimeout(() => {
+            fetchData();
+        }, 100);
+    });
+
+    watch(filterProfileID, () => {
+        page.value = 1;
+        setTimeout(() => {
+            fetchData();
+        }, 100);
+    });
+
+    watch(filterCandidateID, () => {
+        page.value = 1;
+        setTimeout(() => {
+            fetchData();
+        }, 100);
+    });
+
+    watch(sortValue, () => {
         page.value = 1;
         setTimeout(() => {
             fetchData();
@@ -177,6 +213,25 @@
     onMounted(() => {
         fetchData();
     });
+
+    const sortListOptions = [
+        {
+            value: V1ListRoomsSort.LIST_ROOM_SORT_UNSPECIFIED,
+            label: 'Не указано',
+        },
+        {
+            value: V1ListRoomsSort.LIST_ROOM_SORT_CREATED_AT,
+            label: 'Время создания',
+        },
+        {
+            value: V1ListRoomsSort.LIST_ROOM_SORT_FINISHED_AT,
+            label: 'Время завершения',
+        },
+        {
+            value: V1ListRoomsSort.LIST_ROOM_SORT_RESULT_INDEX,
+            label: 'Индекс соответствия',
+        },
+    ];
 </script>
 
 <template>
@@ -184,16 +239,59 @@
         <div class="flex justify-end">
             <UButton :to="`/${module.urlName}/rooms/new`">Создать новый объект</UButton>
         </div>
+        <div
+            class="mt-6 flex gap-4 items-center flex-wrap p-2"
+            style="background-color: var(--ui-color-neutral-100); padding: 10px 15px; border-radius: 6px"
+        >
+            <div class="flex gap-2 items-center">
+                <div style="font-size: 12px; color: var(--ui-color-graylight-500)">Сортировать по:</div>
+                <div style="min-width: 170px">
+                    <USelect
+                        v-model="sortValue"
+                        :items="sortListOptions"
+                        :disabled="isLoading"
+                        class="w-full"
+                    />
+                </div>
+            </div>
+            <div class="flex gap-2 items-center">
+                <div style="font-size: 12px; color: var(--ui-color-graylight-500)">Фильтр по профилю:</div>
+                <div>
+                    <TestingSharedSelectProfile
+                        v-model="filterProfileID"
+                        :disabled="isLoading"
+                    />
+                </div>
+            </div>
+            <div class="flex gap-2 items-center">
+                <div style="font-size: 12px; color: var(--ui-color-graylight-500)">Фильтр по кандидату:</div>
+                <div>
+                    <CrmSharedSelectCandidate
+                        v-model="filterCandidateID"
+                        :disabled="isLoading"
+                    />
+                </div>
+            </div>
+        </div>
         <UTable
             v-model:column-pinning="columnPinning"
             :data="listPrepared"
             :columns="columns"
             :loading="isLoading"
             :ui="{ td: '__whitespace-normal' }"
+            class="mt-6"
         >
             <template #id-cell="{ row }">
-                <div style="font-size: 10px; text-decoration: underline">
-                    <NuxtLink :to="`/${module.urlName}/rooms/${row.original.id}`">{{ row.original.id }}</NuxtLink>
+                <div>
+                    <div style="font-size: 10px; text-decoration: underline">
+                        <NuxtLink :to="`/${module.urlName}/rooms/${row.original.id}`">{{ row.original.id }}</NuxtLink>
+                    </div>
+                    <div
+                        v-if="row.original.createdAt"
+                        style="color: var(--ui-color-graylight-500); margin-top: 5px; font-size: 10px"
+                    >
+                        Время создания: <b>{{ new Date(row.original.createdAt).toLocaleString() }}</b>
+                    </div>
                 </div>
             </template>
             <template #info-cell="{ row }">
@@ -210,9 +308,15 @@
             </template>
             <template #result-cell="{ row }">
                 <template v-if="row.original.status === V1RoomStatus.ROOM_STATUS_FINISHED">
-                    <template v-if="row.original.result">
+                    <template v-if="row.original.resultIndex !== undefined">
                         <div>
-                            Индекс соответствия: <b>{{ row.original.result.totalMatch }}</b>
+                            Индекс соответствия: <b>{{ row.original.resultIndex }}</b>
+                        </div>
+                        <div
+                            v-if="row.original.finishedAt"
+                            style="color: var(--ui-color-graylight-500); margin-top: 5px; font-size: 10px"
+                        >
+                            Время завершения: <b>{{ new Date(row.original.finishedAt).toLocaleString() }}</b>
                         </div>
                     </template>
                 </template>
