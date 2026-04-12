@@ -20,13 +20,15 @@
         "@editorjs/list": "^2.0.8",
         "@editorjs/underline": "^1.2.1",
         "@nuxt/eslint": "^1.9.0",
-        "@nuxt/ui": "^3.3.2",
+        "@nuxt/fonts": "^0.14.0",
+        "@nuxt/icon": "^2.2.1",
+        "@nuxt/ui": "^4.6.1",
         "@pinia/nuxt": "^0.11.2",
         "@valibot/i18n": "^1.0.0",
-        "@vueuse/nuxt": "^13.7.0",
+        "@vueuse/nuxt": "^14.2.1",
         "eslint": "^9.33.0",
         "lucide-vue-next": "^0.553.0",
-        "nuxt": "^4.3.1",
+        "nuxt": "^4.4.2",
         "pinia": "^3.0.3",
         "valibot": "^1.1.0",
         "vue": "^3.5.18",
@@ -35,8 +37,10 @@
     "devDependencies": {
         "@bufbuild/buf": "^1.65.0",
         "@bufbuild/protoc-gen-es": "^2.11.0",
+        "@types/node": "^25.6.0",
         "eslint-plugin-unused-imports": "^4.2.0",
         "less": "^4.4.0",
-        "prettier": "^3.6.2"
+        "prettier": "^3.6.2",
+        "tailwindcss": "^4.2.2"
     }
 }

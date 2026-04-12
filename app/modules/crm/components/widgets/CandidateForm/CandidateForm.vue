@@ -1,4 +1,6 @@
 <script setup lang="ts">
+    import { CalendarDate } from '@internationalized/date';
+    import { computed, nextTick, ref, useTemplateRef } from 'vue';
     import type { V1Candidate } from '~/api/generated/Api';
     import type { UploadedFile } from '~/core/components/shared/FileUploader/model/types/types';
     import { CRM_CANDIDATE_RESUME_FILE_TARGET } from '~/modules/crm/domain/model/const/const';
@@ -10,9 +12,9 @@
     }>();
 
     const dataModel = defineModel<CandidateFromState>({ required: true });
-
     const dataItem = defineModel<V1Candidate | null>('dataItem', { required: true });
 
+    const inputDate = useTemplateRef('inputDate');
     const show = ref(true);
 
     const rebuild = async () => {
@@ -37,17 +39,12 @@
         }));
     });
 
-    const birthday = computed<string | null>({
+    const birthday = computed<CalendarDate | null>({
         get() {
             const v = dataModel.value.birthday;
-            if (!v) {
-                return null;
-            }
+            if (!v) return null;
 
-            const mm = String(v.month).padStart(2, '0');
-            const dd = String(v.day).padStart(2, '0');
-
-            return `${mm}.${dd}.${v.year}`;
+            return new CalendarDate(v.year, v.month, v.day);
         },
         set(val) {
             if (!val) {
@@ -55,39 +52,17 @@
                 return;
             }
 
-            let parts = val.split('T');
-            parts = parts[0]!.split('-');
-            if (parts.length !== 3) {
-                dataModel.value.birthday = undefined;
-                return;
-            }
-
-            const [yearStr, monthStr, dayStr] = parts;
-
-            const month = Number(monthStr);
-            const day = Number(dayStr);
-            const year = Number(yearStr);
-
-            if (!Number.isInteger(year) || !Number.isInteger(month) || !Number.isInteger(day)) {
-                dataModel.value.birthday = undefined;
-                console.log(1);
-                return;
-            }
-
-            const date = new Date(year, month - 1, day);
-
-            if (date.getFullYear() !== year || date.getMonth() + 1 !== month || date.getDate() !== day) {
-                dataModel.value.birthday = undefined;
-                return;
-            }
-
             dataModel.value.birthday = {
-                year,
-                month,
-                day,
+                year: val.year,
+                month: val.month,
+                day: val.day,
             };
         },
     });
+
+    const clearBirthday = () => {
+        birthday.value = null;
+    };
 
     const onUpdateFile = (files: UploadedFile[]) => {
         if (files.length === 0) {
@@ -116,6 +91,7 @@
                 />
             </div>
         </div>
+
         <div>
             <div class="title">Фамилия:</div>
             <div class="value">
@@ -127,6 +103,7 @@
                 />
             </div>
         </div>
+
         <div>
             <div class="title">
                 Пол:
@@ -142,18 +119,57 @@
                 />
             </div>
         </div>
+
         <div>
             <div class="title">
                 Дата рождения:
                 <div class="desc">Указывать необязательно, но знание поможет нашим алгоритмам точнее работать с карточкой кандидата</div>
             </div>
             <div class="value">
-                <SharedDatetimePicker
+                <UInputDate
+                    ref="inputDate"
                     v-model="birthday"
                     size="xl"
-                />
+                    class="w-full"
+                    :disabled="disabled"
+                >
+                    <template #trailing>
+                        <div class="flex items-center gap-1">
+                            <UButton
+                                v-if="birthday && !disabled"
+                                color="neutral"
+                                variant="link"
+                                size="sm"
+                                icon="i-lucide-circle-x"
+                                aria-label="Очистить дату"
+                                class="px-0"
+                                @click.stop="clearBirthday"
+                            />
+
+                            <UPopover :reference="inputDate?.inputsRef?.[3]?.$el">
+                                <UButton
+                                    color="neutral"
+                                    variant="link"
+                                    size="sm"
+                                    icon="i-lucide-calendar"
+                                    aria-label="Выбрать дату"
+                                    class="px-0"
+                                    :disabled="disabled"
+                                />
+
+                                <template #content>
+                                    <UCalendar
+                                        v-model="birthday"
+                                        class="p-2"
+                                    />
+                                </template>
+                            </UPopover>
+                        </div>
+                    </template>
+                </UInputDate>
             </div>
         </div>
+
         <div>
             <div class="title">
                 Резюме:
@@ -183,12 +199,3 @@
         </div>
     </div>
 </template>
-
-<style lang="less" module>
-    @import '@styles/includes';
-
-    .linksBlockTitle {
-        font-size: 20px;
-        margin-bottom: 20px;
-    }
-</style>
