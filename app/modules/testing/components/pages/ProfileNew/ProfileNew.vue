@@ -31,6 +31,7 @@
 
     const initState: IProfileItemState = {
         name: '',
+        description: '',
         personalityTraits: {
             map: {},
         },
@@ -64,6 +65,7 @@
             const res = await api.v1.testingPublicServiceCreateProfile({
                 payload: {
                     name: itemState.value.name,
+                    description: itemState.value.description,
                     personalityTraits: {
                         map: itemState.value.personalityTraits.map,
                     },

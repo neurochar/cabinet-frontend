@@ -7,5 +7,5 @@ export const IPersonalityTraitPriorityConfig: Record<V1PersonalityTraitPriority,
     [V1PersonalityTraitPriority.PRESONALITY_TRAIT_PRIORITY_HIGH]: { label: 'Высокий', sort: 3 },
 };
 
-export type IProfileItemState = Omit<Pick<V1TestingProfile, 'name' | 'personalityTraits'>, 'personalityTraits'> &
+export type IProfileItemState = Omit<Pick<V1TestingProfile, 'name' | 'description' | 'personalityTraits'>, 'personalityTraits'> &
     Required<Pick<V1TestingProfile, 'personalityTraits'>>;

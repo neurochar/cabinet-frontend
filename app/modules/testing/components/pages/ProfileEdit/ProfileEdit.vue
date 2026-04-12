@@ -78,6 +78,7 @@
 
         const stateValue: IProfileItemState = {
             name: item.name,
+            description: item.description,
             personalityTraits: {
                 map: item.personalityTraits?.map || {},
             },
@@ -118,6 +119,7 @@
             const res = await api.v1.testingPublicServicePatchProfile(props.id, {
                 payload: {
                     name: itemState.value.name,
+                    description: itemState.value.description,
                     personalityTraits: {
                         map: itemState.value.personalityTraits.map,
                     },
