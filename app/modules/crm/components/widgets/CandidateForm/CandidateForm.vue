@@ -54,12 +54,17 @@
                 return;
             }
 
-            const d = new Date(val);
+            const parts = val.match(/^(\d{2})\.(\d{2})\.(\d{4})$/);
+            if (!parts) {
+                dataModel.value.birthday = undefined;
+                return;
+            }
 
+            const [, dd, mm, yyyy] = parts;
             dataModel.value.birthday = {
-                year: d.getFullYear(),
-                month: d.getMonth() + 1,
-                day: d.getDate(),
+                year: Number(yyyy),
+                month: Number(mm),
+                day: Number(dd),
             };
         },
     });

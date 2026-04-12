@@ -165,5 +165,5 @@ export function calcAge(birthDate: Date, compareDate: Date = new Date()): number
 }
 
 export function parsePbDate(d: { year: number; month: number; day: number }) {
-    return new Date(d.year, d.month - 1, d.day);
+    return new Date(Number(d.year), Number(d.month) - 1, Number(d.day));
 }
