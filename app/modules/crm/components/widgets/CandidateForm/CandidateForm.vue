@@ -43,6 +43,7 @@
             if (!v) {
                 return null;
             }
+
             const mm = String(v.month).padStart(2, '0');
             const dd = String(v.day).padStart(2, '0');
 
@@ -54,17 +55,36 @@
                 return;
             }
 
-            const parts = val.match(/^(\d{2})\.(\d{2})\.(\d{4})$/);
-            if (!parts) {
+            let parts = val.split('T');
+            parts = parts[0]!.split('-');
+            if (parts.length !== 3) {
                 dataModel.value.birthday = undefined;
                 return;
             }
 
-            const [, dd, mm, yyyy] = parts;
+            const [yearStr, monthStr, dayStr] = parts;
+
+            const month = Number(monthStr);
+            const day = Number(dayStr);
+            const year = Number(yearStr);
+
+            if (!Number.isInteger(year) || !Number.isInteger(month) || !Number.isInteger(day)) {
+                dataModel.value.birthday = undefined;
+                console.log(1);
+                return;
+            }
+
+            const date = new Date(year, month - 1, day);
+
+            if (date.getFullYear() !== year || date.getMonth() + 1 !== month || date.getDate() !== day) {
+                dataModel.value.birthday = undefined;
+                return;
+            }
+
             dataModel.value.birthday = {
-                year: Number(yyyy),
-                month: Number(mm),
-                day: Number(dd),
+                year,
+                month,
+                day,
             };
         },
     });
@@ -122,6 +142,7 @@
                 />
             </div>
         </div>
+        !{{ dataModel.birthday }}
         <div>
             <div class="title">
                 Дата рождения:
