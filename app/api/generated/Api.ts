@@ -309,6 +309,7 @@ export interface V1Candidate {
   gender: V1Gender;
   id: string;
   name: string;
+  resumeFile?: V1File;
   surname: string;
   tenantId: string;
   /** @format int64 */
@@ -355,7 +356,12 @@ export interface V1CreateCandidateRequestPayload {
   birthday: V1OptionalDate;
   gender: V1Gender;
   name: string;
+  resumeFiles?: V1CreateCandidateRequestPayloadResumeFiles;
   surname: string;
+}
+
+export interface V1CreateCandidateRequestPayloadResumeFiles {
+  fileId?: string;
 }
 
 export interface V1CreateCandidateResponse {
@@ -551,7 +557,13 @@ export interface V1PatchCandidateRequestPayload {
   birthday?: V1OptionalDate;
   gender?: V1Gender;
   name?: string;
+  resumeFiles?: V1PatchCandidateRequestPayloadResumeFiles;
+  resumeFilesClear?: boolean;
   surname?: string;
+}
+
+export interface V1PatchCandidateRequestPayloadResumeFiles {
+  fileId?: string;
 }
 
 export type V1PatchCandidateResponse = object;

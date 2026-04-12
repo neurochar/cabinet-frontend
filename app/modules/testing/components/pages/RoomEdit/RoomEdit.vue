@@ -193,7 +193,7 @@
                         style="font-size: 18px"
                     >
                         <div>
-                            Совпадение: <b>{{ itemObject.result.totalMatch }}%</b>
+                            Индекс соответствия: <b>{{ itemObject.result.totalMatch }}</b>
                         </div>
                         <div :class="$style.result_desc">{{ itemObject.result.totalMatchTip }}</div>
                     </div>

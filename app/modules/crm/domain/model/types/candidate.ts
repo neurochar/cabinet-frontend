@@ -6,4 +6,4 @@ export const ICandidateItemGenderConfig: Record<V1Gender, { label: string }> = {
     [V1Gender.GENDER_FEMALE]: { label: 'Женский' },
 };
 
-export type CandidateFromState = Pick<V1Candidate, 'name' | 'surname' | 'birthday' | 'gender'>;
+export type CandidateFromState = Pick<V1Candidate, 'name' | 'surname' | 'birthday' | 'gender' | 'resumeFile'>;

@@ -212,7 +212,7 @@
                 <template v-if="row.original.status === V1RoomStatus.ROOM_STATUS_FINISHED">
                     <template v-if="row.original.result">
                         <div>
-                            Совпадение: <b>{{ row.original.result.totalMatch }}%</b>
+                            Индекс соответствия: <b>{{ row.original.result.totalMatch }}</b>
                         </div>
                     </template>
                 </template>

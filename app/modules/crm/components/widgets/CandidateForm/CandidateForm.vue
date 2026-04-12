@@ -1,5 +1,7 @@
 <script setup lang="ts">
     import type { V1Candidate } from '~/api/generated/Api';
+    import type { UploadedFile } from '~/core/components/shared/FileUploader/model/types/types';
+    import { CRM_CANDIDATE_RESUME_FILE_TARGET } from '~/modules/crm/domain/model/const/const';
     import { ICandidateItemGenderConfig, type CandidateFromState } from '~/modules/crm/domain/model/types/candidate';
 
     const props = defineProps<{
@@ -61,6 +63,16 @@
             };
         },
     });
+
+    const onUpdateFile = (files: UploadedFile[]) => {
+        if (files.length === 0) {
+            dataModel.value.resumeFile = undefined;
+            return;
+        }
+
+        const file = files[0]!;
+        dataModel.value.resumeFile = file.targets[CRM_CANDIDATE_RESUME_FILE_TARGET]!;
+    };
 </script>
 
 <template>
@@ -93,7 +105,7 @@
         <div>
             <div class="title">
                 Пол:
-                <div class="desc">Указывать необязательно, но знание поможет нашим алгоритмам точнее работать карточкой с кандидата</div>
+                <div class="desc">Указывать необязательно, но знание поможет нашим алгоритмам точнее работать с карточкой кандидата</div>
             </div>
             <div class="value">
                 <USelect
@@ -108,12 +120,39 @@
         <div>
             <div class="title">
                 Дата рождения:
-                <div class="desc">Указывать необязательно, но знание поможет нашим алгоритмам точнее работать карточкой с кандидата</div>
+                <div class="desc">Указывать необязательно, но знание поможет нашим алгоритмам точнее работать с карточкой кандидата</div>
             </div>
             <div class="value">
                 <SharedDatetimePicker
                     v-model="birthday"
                     size="xl"
+                />
+            </div>
+        </div>
+        <div>
+            <div class="title">
+                Резюме:
+                <div class="desc">Указывать необязательно, но резюме поможет нашим алгоритмам точнее работать с карточкой кандидата</div>
+            </div>
+            <div class="value">
+                <SharedFileUploader
+                    :disabled="disabled"
+                    :lead-target="CRM_CANDIDATE_RESUME_FILE_TARGET"
+                    mode="solo"
+                    upload-url="/v1/crm/candidates-resume"
+                    accept-types="application/pdf,application/msword,application/vnd.openxmlformats-officedocument.wordprocessingml.document"
+                    :model-value="
+                        dataModel.resumeFile
+                            ? [
+                                  {
+                                      targets: {
+                                          [CRM_CANDIDATE_RESUME_FILE_TARGET]: dataModel.resumeFile,
+                                      },
+                                  },
+                              ]
+                            : []
+                    "
+                    @update:model-value="onUpdateFile"
                 />
             </div>
         </div>

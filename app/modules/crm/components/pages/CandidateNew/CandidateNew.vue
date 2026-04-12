@@ -64,6 +64,11 @@
                     birthday: {
                         date: itemState.value.birthday,
                     },
+                    resumeFiles: itemState.value.resumeFile
+                        ? {
+                              fileId: itemState.value.resumeFile.id,
+                          }
+                        : undefined,
                 },
             });
 

@@ -1,6 +1,6 @@
 <script setup lang="ts">
     import type { CrmWidgetCandidateForm } from '#components';
-    import type { V1Candidate } from '~/api/generated/Api';
+    import type { V1Candidate, V1PatchCandidateRequestPayload } from '~/api/generated/Api';
     import { showErrors, showSuccess } from '~/core/components/shared/inform/toast';
     import { module } from '~/modules/crm/const';
     import { setModuleBreadcrums } from '~/modules/crm/domain/actions/setModuleBreadcrums';
@@ -77,6 +77,7 @@
             surname: item.surname,
             birthday: item.birthday,
             gender: item.gender,
+            resumeFile: item.resumeFile,
         };
     };
 
@@ -109,15 +110,25 @@
 
         isLoading.value = true;
         try {
-            const res = await api.v1.crmPublicServicePatchCandidate(itemObject.value.id, {
-                payload: {
-                    gender: itemState.value.gender,
-                    name: itemState.value.name,
-                    surname: itemState.value.surname,
-                    birthday: {
-                        date: itemState.value.birthday,
-                    },
+            const payload: V1PatchCandidateRequestPayload = {
+                gender: itemState.value.gender,
+                name: itemState.value.name,
+                surname: itemState.value.surname,
+                birthday: {
+                    date: itemState.value.birthday,
                 },
+            };
+
+            if (itemState.value.resumeFile) {
+                payload.resumeFiles = {
+                    fileId: itemState.value.resumeFile.id,
+                };
+            } else {
+                payload.resumeFilesClear = true;
+            }
+
+            const res = await api.v1.crmPublicServicePatchCandidate(itemObject.value.id, {
+                payload: payload,
                 version: itemObject.value.version,
                 skipVersionCheck: false,
             });
