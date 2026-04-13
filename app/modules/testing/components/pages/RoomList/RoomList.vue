@@ -1,10 +1,11 @@
 <script setup lang="ts">
     import type { DropdownMenuItem, TableColumn } from '@nuxt/ui';
-    import { V1ListRoomsSort, V1RoomStatus, type V1TestingListRoom } from '~/api/generated/Api';
+    import { V1ListRoomsSort, V1RoomStatus, V1TestingRoomResultAnalyzeHiringDecision, type V1TestingListRoom } from '~/api/generated/Api';
     import Confirm from '~/core/components/shared/Confirm/modals/Confirm.vue';
     import { showErrors, showSuccess } from '~/core/components/shared/inform/toast';
     import { module } from '~/modules/testing/const';
     import { setModuleBreadcrums } from '~/modules/testing/domain/actions/setModuleBreadcrums';
+    import { hiringDecisioToText } from '~/modules/testing/domain/model/types/room';
     import { setMenu } from '~/plugins/app/model/actions/setMenu';
     import { ApiError } from '~/shared/errors/errors';
 
@@ -311,6 +312,14 @@
                     <template v-if="row.original.resultIndex !== undefined">
                         <div>
                             Индекс соответствия: <b>{{ row.original.resultIndex }}</b>
+                        </div>
+                        <div
+                            v-if="
+                                row.original.hiringDecision &&
+                                row.original.hiringDecision !== V1TestingRoomResultAnalyzeHiringDecision.TESTING_ROOM_RESULT_ANALYZE_HIRING_DECISION_UNSPECIFIED
+                            "
+                        >
+                            <b>{{ hiringDecisioToText(row.original.hiringDecision) }}</b>
                         </div>
                         <div
                             v-if="row.original.finishedAt"

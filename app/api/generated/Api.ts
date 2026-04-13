@@ -10,6 +10,14 @@
  * ---------------------------------------------------------------
  */
 
+/** @default "TESTING_ROOM_RESULT_ANALYZE_HIRING_DECISION_UNSPECIFIED" */
+export enum V1TestingRoomResultAnalyzeHiringDecision {
+  TESTING_ROOM_RESULT_ANALYZE_HIRING_DECISION_UNSPECIFIED = "TESTING_ROOM_RESULT_ANALYZE_HIRING_DECISION_UNSPECIFIED",
+  TESTING_ROOM_RESULT_ANALYZE_HIRING_DECISION_HIRE = "TESTING_ROOM_RESULT_ANALYZE_HIRING_DECISION_HIRE",
+  TESTING_ROOM_RESULT_ANALYZE_HIRING_DECISION_HIRE_WITH_CONDITIONS = "TESTING_ROOM_RESULT_ANALYZE_HIRING_DECISION_HIRE_WITH_CONDITIONS",
+  TESTING_ROOM_RESULT_ANALYZE_HIRING_DECISION_DONT_HIRE = "TESTING_ROOM_RESULT_ANALYZE_HIRING_DECISION_DONT_HIRE",
+}
+
 /** @default "TECHNIQUE_ITEM_TYPE_UNSPECIFIED" */
 export enum V1TechniqueItemType {
   TECHNIQUE_ITEM_TYPE_UNSPECIFIED = "TECHNIQUE_ITEM_TYPE_UNSPECIFIED",
@@ -673,6 +681,7 @@ export interface V1TestingListRoom {
   createdAt: string;
   /** @format date-time */
   finishedAt?: string;
+  hiringDecision?: V1TestingRoomResultAnalyzeHiringDecision;
   id: string;
   profile?: V1TestingRoomProfile;
   /** @format int32 */
@@ -723,10 +732,29 @@ export interface V1TestingRoomProfile {
 }
 
 export interface V1TestingRoomResult {
+  analyze?: V1TestingRoomResultAnalyze;
   /** @format float */
   totalMatch: number;
   totalMatchTip: string;
   traits?: Record<string, V1TestingRoomResultTrait>;
+}
+
+export interface V1TestingRoomResultAnalyze {
+  actionItems?: string[];
+  /** @format float */
+  confidenceScore: number;
+  hiringDecision: V1TestingRoomResultAnalyzeHiringDecision;
+  mainRecomendation: string;
+  personalityFit: V1TestingRoomResultAnalyzePersonalityFit;
+  risks?: string[];
+}
+
+export interface V1TestingRoomResultAnalyzePersonalityFit {
+  keyGaps?: string[];
+  keyMatches?: string[];
+  /** @format int32 */
+  score: number;
+  summary: string;
 }
 
 export interface V1TestingRoomResultTrait {

@@ -1,12 +1,12 @@
 <script setup lang="ts">
-    import { V1PersonalityTraitPriority, type V1TestingRoom } from '~/api/generated/Api';
+    import { V1PersonalityTraitPriority, V1TestingRoomResultAnalyzeHiringDecision, type V1TestingRoom } from '~/api/generated/Api';
     import { showErrors } from '~/core/components/shared/inform/toast';
     import { module as crmModule } from '~/modules/crm/const';
     import { module } from '~/modules/testing/const';
     import { setModuleBreadcrums } from '~/modules/testing/domain/actions/setModuleBreadcrums';
     import { loadPersonalityTraitsList } from '~/modules/testing/domain/api/personality_trait/fetchPersonalityTraitsList';
     import { IPersonalityTraitPriorityConfig } from '~/modules/testing/domain/model/types/profile';
-    import { IRoomStatusConfig } from '~/modules/testing/domain/model/types/room';
+    import { hiringDecisioToText, IRoomStatusConfig } from '~/modules/testing/domain/model/types/room';
     import { setMenu } from '~/plugins/app/model/actions/setMenu';
     import { ApiError } from '~/shared/errors/errors';
 
@@ -181,7 +181,7 @@
                 <div class="title">Результат</div>
             </div>
             <div class="form-table mt-4">
-                <div>
+                <div v-if="itemObject.resultIndex">
                     <div
                         class="title"
                         style="font-size: 18px"
@@ -193,11 +193,122 @@
                         style="font-size: 18px"
                     >
                         <div>
-                            Индекс соответствия: <b>{{ itemObject.result.totalMatch }}</b>
+                            <div>
+                                Индекс соответствия: <b>{{ itemObject.resultIndex }}</b>
+                            </div>
                         </div>
-                        <div :class="$style.result_desc">{{ itemObject.result.totalMatchTip }}</div>
+                        <div
+                            v-if="
+                                itemObject.result &&
+                                itemObject.result.analyze &&
+                                itemObject.result.analyze.hiringDecision !==
+                                    V1TestingRoomResultAnalyzeHiringDecision.TESTING_ROOM_RESULT_ANALYZE_HIRING_DECISION_UNSPECIFIED
+                            "
+                        >
+                            <b>{{ hiringDecisioToText(itemObject.result.analyze.hiringDecision) }}</b>
+                            <div
+                                v-if="itemObject.result.analyze.mainRecomendation"
+                                style="margin-top: 20px; font-size: 16px"
+                            >
+                                {{ itemObject.result.analyze.mainRecomendation }}
+                            </div>
+                        </div>
                     </div>
                 </div>
+                <template v-if="itemObject.result && itemObject.result.analyze">
+                    <div v-if="itemObject.result.analyze.personalityFit.keyMatches">
+                        <div
+                            class="title"
+                            style="font-size: 16px"
+                        >
+                            Сильные стороны:
+                        </div>
+                        <div
+                            class="value"
+                            style="font-size: 14px"
+                        >
+                            <div>
+                                <ul style="list-style: circle">
+                                    <li
+                                        v-for="item in itemObject.result.analyze.personalityFit.keyMatches"
+                                        :key="item"
+                                    >
+                                        {{ item }}
+                                    </li>
+                                </ul>
+                            </div>
+                        </div>
+                    </div>
+                    <div v-if="itemObject.result.analyze.personalityFit.keyGaps">
+                        <div
+                            class="title"
+                            style="font-size: 16px"
+                        >
+                            Слабые стороны:
+                        </div>
+                        <div
+                            class="value"
+                            style="font-size: 14px"
+                        >
+                            <div>
+                                <ul style="list-style: circle">
+                                    <li
+                                        v-for="item in itemObject.result.analyze.personalityFit.keyGaps"
+                                        :key="item"
+                                    >
+                                        {{ item }}
+                                    </li>
+                                </ul>
+                            </div>
+                        </div>
+                    </div>
+                    <div v-if="itemObject.result.analyze.risks?.length">
+                        <div
+                            class="title"
+                            style="font-size: 16px"
+                        >
+                            Ключевые риски:
+                        </div>
+                        <div
+                            class="value"
+                            style="font-size: 14px"
+                        >
+                            <div>
+                                <ul style="list-style: circle">
+                                    <li
+                                        v-for="item in itemObject.result.analyze.risks"
+                                        :key="item"
+                                    >
+                                        {{ item }}
+                                    </li>
+                                </ul>
+                            </div>
+                        </div>
+                    </div>
+                    <div v-if="itemObject.result.analyze.actionItems?.length">
+                        <div
+                            class="title"
+                            style="font-size: 16px"
+                        >
+                            Рекомендуемые действия:
+                        </div>
+                        <div
+                            class="value"
+                            style="font-size: 14px"
+                        >
+                            <div>
+                                <ul style="list-style: circle">
+                                    <li
+                                        v-for="item in itemObject.result.analyze.actionItems"
+                                        :key="item"
+                                    >
+                                        {{ item }}
+                                    </li>
+                                </ul>
+                            </div>
+                        </div>
+                    </div>
+                </template>
                 <template
                     v-for="[traitID, traitConfig] in traitsSorted"
                     :key="traitID"
